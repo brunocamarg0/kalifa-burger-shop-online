@@ -46,8 +46,12 @@ class OrderService {
 
   // Buscar todos os pedidos (admin)
   async getAllOrders(): Promise<Order[]> {
+    console.log('🔍 Buscando pedidos no localStorage...');
     const orders = localStorage.getItem(this.ADMIN_KEY);
-    return orders ? JSON.parse(orders) : [];
+    console.log('📦 Dados brutos do localStorage:', orders);
+    const parsedOrders = orders ? JSON.parse(orders) : [];
+    console.log('📋 Pedidos encontrados:', parsedOrders.length);
+    return parsedOrders;
   }
 
   // Buscar pedido por ID
@@ -134,9 +138,16 @@ class OrderService {
 
   // Salvar pedido no localStorage
   private saveOrder(order: Order) {
+    console.log('💾 Salvando pedido:', order.id);
     const orders = this.getAllOrders();
+    console.log('📋 Pedidos existentes:', orders.length);
     orders.push(order);
     localStorage.setItem(this.ADMIN_KEY, JSON.stringify(orders));
+    console.log('✅ Pedido salvo com sucesso! Total de pedidos:', orders.length);
+    
+    // Verificar se foi salvo corretamente
+    const savedOrders = localStorage.getItem(this.ADMIN_KEY);
+    console.log('🔍 Verificação - Pedidos no localStorage:', savedOrders ? JSON.parse(savedOrders).length : 0);
   }
 
   // Simular envio de notificação
