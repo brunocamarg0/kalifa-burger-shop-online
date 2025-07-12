@@ -289,6 +289,12 @@ const Checkout = () => {
                 <CardDescription>
                   Escolha como você quer pagar
                 </CardDescription>
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    💡 <strong>Atenção:</strong> Apenas o Mercado Pago processa pagamentos reais.<br/>
+                    Os outros métodos são apenas para demonstração.
+                  </p>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
@@ -296,19 +302,17 @@ const Checkout = () => {
                     <SelectValue placeholder="Escolha o método de pagamento" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="mercadopago">Mercado Pago (Cartão, PIX, Boleto)</SelectItem>
-                    <SelectItem value="pix">PIX (Pagamento instantâneo)</SelectItem>
-                    <SelectItem value="credit">Cartão de Crédito</SelectItem>
-                    <SelectItem value="debit">Cartão de Débito</SelectItem>
-                    <SelectItem value="cash">Dinheiro na entrega</SelectItem>
+                    <SelectItem value="mercadopago">💳 Mercado Pago (Pagamento Real)</SelectItem>
+                    <SelectItem value="pix">📱 PIX (Demonstração)</SelectItem>
+                    <SelectItem value="cash">💵 Dinheiro na entrega (Demonstração)</SelectItem>
                   </SelectContent>
                 </Select>
 
                 {paymentMethod === 'mercadopago' ? (
-                  <div className="p-4 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-green-800 mb-4">
                       <CreditCard className="w-4 h-4" />
-                      Pagamento seguro via Mercado Pago (Cartão, PIX, Boleto)
+                      ✅ Pagamento Real - Mercado Pago (Cartão, PIX, Boleto)
                     </div>
                     
                     {!formData.name || !formData.email || !formData.phone ? (
@@ -357,51 +361,7 @@ const Checkout = () => {
                       />
                     )}
                   </div>
-                ) : paymentMethod === 'credit' || paymentMethod === 'debit' ? (
-                  <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-                    <div>
-                      <Label htmlFor="cardName">Nome no Cartão</Label>
-                      <Input
-                        id="cardName"
-                        value={formData.cardName}
-                        onChange={(e) => handleInputChange('cardName', e.target.value)}
-                        placeholder="Nome como está no cartão"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cardNumber">Número do Cartão</Label>
-                      <Input
-                        id="cardNumber"
-                        value={formData.cardNumber}
-                        onChange={(e) => handleInputChange('cardNumber', e.target.value)}
-                        placeholder="0000 0000 0000 0000"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="cardExpiry">Validade</Label>
-                        <Input
-                          id="cardExpiry"
-                          value={formData.cardExpiry}
-                          onChange={(e) => handleInputChange('cardExpiry', e.target.value)}
-                          placeholder="MM/AA"
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="cardCvv">CVV</Label>
-                        <Input
-                          id="cardCvv"
-                          value={formData.cardCvv}
-                          onChange={(e) => handleInputChange('cardCvv', e.target.value)}
-                          placeholder="123"
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
+
                 ) : paymentMethod === 'pix' ? (
                   <div className="p-4 bg-muted/30 rounded-lg">
                     {!formData.name || !formData.email || !formData.phone ? (
@@ -434,10 +394,10 @@ const Checkout = () => {
                     )}
                   </div>
                 ) : paymentMethod === 'cash' ? (
-                  <div className="p-4 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-sm text-muted-foreground">
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-yellow-800">
                       <CreditCard className="w-4 h-4" />
-                      Pagamento em dinheiro no momento da entrega
+                      🧪 Demonstração - Pagamento em dinheiro no momento da entrega
                     </div>
                   </div>
                 ) : null}
