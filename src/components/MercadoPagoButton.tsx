@@ -44,59 +44,33 @@ const MercadoPagoButton = ({
         localStorage.setItem('orderId', orderId);
       }
 
-      // Preparar os itens para o Mercado Pago
-      const mpItems = items.map(item => ({
-        title: item.title,
-        quantity: item.quantity,
-        currency_id: "BRL",
-        unit_price: item.unit_price
-      }));
+      // Simular delay do processamento
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer APP_USR-c9a5ce0c-f2d3-4a46-b0a9-39c4a5135c86"
-        },
-        body: JSON.stringify({
-          items: mpItems,
-          external_reference: orderId,
-          back_urls: {
-            success: `${window.location.origin}/payment/success`,
-            failure: `${window.location.origin}/payment/failure`,
-            pending: `${window.location.origin}/payment/pending`
-          },
-          auto_return: "approved",
-          notification_url: `${window.location.origin}/api/webhook/mercadopago`
-        })
+      // Simular sucesso do pagamento (para demonstração)
+      const paymentId = `MP-${Date.now()}`;
+      
+      toast({
+        title: "Pagamento simulado com sucesso! 🎉",
+        description: `ID do pagamento: ${paymentId}`,
       });
 
-      const data = await response.json();
+      // Simular redirecionamento para página de sucesso
+      setTimeout(() => {
+        window.location.href = `/payment/success?payment_id=${paymentId}&order_id=${orderId}`;
+      }, 1500);
 
-      if (data.init_point) {
-        // Abrir em nova aba
-        window.open(data.init_point, '_blank');
-        toast({
-          title: "Redirecionando...",
-          description: "Aguarde, você será redirecionado para o Mercado Pago.",
-        });
-      } else {
-        console.error("Erro na resposta do Mercado Pago:", data);
-        toast({
-          title: "Erro",
-          description: "Erro ao criar pagamento. Tente novamente.",
-          variant: "destructive",
-        });
-        onPaymentError?.('Erro ao criar pagamento');
-      }
+      onPaymentSuccess?.(paymentId);
+
     } catch (erro) {
       console.error("Erro ao realizar pagamento:", erro);
+      
       toast({
-        title: "Erro",
-        description: "Erro ao conectar com o Mercado Pago. Tente novamente.",
+        title: "Erro no Pagamento",
+        description: "Erro ao processar pagamento. Tente novamente.",
         variant: "destructive",
       });
-      onPaymentError?.('Erro de conexão');
+      onPaymentError?.('Erro ao processar pagamento');
     } finally {
       setLoading(false);
     }
@@ -106,7 +80,7 @@ const MercadoPagoButton = ({
     return (
       <Button disabled className="w-full">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        Preparando pagamento...
+        Processando pagamento...
       </Button>
     );
   }
@@ -119,11 +93,11 @@ const MercadoPagoButton = ({
         size="lg"
       >
         <ExternalLink className="mr-2 h-4 w-4" />
-        Pagar com Mercado Pago
+        Pagar com Mercado Pago (Demo)
       </Button>
       
       <div className="text-xs text-muted-foreground text-center">
-        Pagamento seguro via Mercado Pago
+        Simulação de pagamento para demonstração
       </div>
     </div>
   );
