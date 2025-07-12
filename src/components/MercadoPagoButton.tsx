@@ -12,6 +12,17 @@ interface MercadoPagoButtonProps {
   items: CartItem[];
   orderId: string;
   total: number;
+  customerData?: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    zipCode: string;
+    neighborhood: string;
+    complement: string;
+    notes: string;
+  };
   onPaymentSuccess?: (paymentId: string) => void;
   onPaymentError?: (error: string) => void;
 }
@@ -20,6 +31,7 @@ const MercadoPagoButton = ({
   items, 
   orderId, 
   total, 
+  customerData,
   onPaymentSuccess, 
   onPaymentError 
 }: MercadoPagoButtonProps) => {
@@ -55,6 +67,13 @@ const MercadoPagoButton = ({
 
   const handleDirectPayment = () => {
     if (preferenceId) {
+      // Salvar dados do cliente no localStorage antes de redirecionar
+      if (customerData) {
+        localStorage.setItem('customerData', JSON.stringify(customerData));
+        localStorage.setItem('orderId', orderId);
+      }
+      
+      // Redirecionar para o Mercado Pago
       window.open(`https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`, '_blank');
     }
   };

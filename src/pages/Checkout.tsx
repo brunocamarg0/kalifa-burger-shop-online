@@ -309,31 +309,52 @@ const Checkout = () => {
                       <CreditCard className="w-4 h-4" />
                       Pagamento seguro via Mercado Pago (Cartão, PIX, Boleto)
                     </div>
-                    <MercadoPagoButton
-                      items={state.items.map((item): CartItem => ({
-                        id: item.id,
-                        title: item.name,
-                        quantity: item.quantity,
-                        unit_price: item.price,
-                        description: item.description
-                      }))}
-                      orderId={`ORDER-${Date.now()}`}
-                      total={finalTotal}
-                      onPaymentSuccess={(paymentId) => {
-                        toast({
-                          title: "Pagamento aprovado! 🎉",
-                          description: `Pagamento processado com sucesso. ID: ${paymentId}`,
-                        });
-                        // Aqui você pode redirecionar ou limpar o carrinho
-                      }}
-                      onPaymentError={(error) => {
-                        toast({
-                          title: "Erro no pagamento",
-                          description: error,
-                          variant: "destructive",
-                        });
-                      }}
-                    />
+                    
+                    {!formData.name || !formData.email || !formData.phone ? (
+                      <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                        <p className="text-sm text-yellow-800">
+                          Preencha os dados pessoais obrigatórios (Nome, E-mail e Telefone) para continuar com o pagamento.
+                        </p>
+                      </div>
+                    ) : (
+                      <MercadoPagoButton
+                        items={state.items.map((item): CartItem => ({
+                          id: item.id,
+                          title: item.name,
+                          quantity: item.quantity,
+                          unit_price: item.price,
+                          description: item.description
+                        }))}
+                        orderId={`ORDER-${Date.now()}`}
+                        total={finalTotal}
+                        customerData={{
+                          name: formData.name,
+                          email: formData.email,
+                          phone: formData.phone,
+                          address: formData.address,
+                          city: formData.city,
+                          zipCode: formData.zipCode,
+                          neighborhood: formData.neighborhood,
+                          complement: formData.complement,
+                          notes: formData.notes
+                        }}
+                        onPaymentSuccess={(paymentId) => {
+                          toast({
+                            title: "Pagamento aprovado! 🎉",
+                            description: `Pagamento processado com sucesso. ID: ${paymentId}`,
+                          });
+                          clearCart();
+                          navigate('/payment/success?order_id=' + `ORDER-${Date.now()}`);
+                        }}
+                        onPaymentError={(error) => {
+                          toast({
+                            title: "Erro no pagamento",
+                            description: error,
+                            variant: "destructive",
+                          });
+                        }}
+                      />
+                    )}
                   </div>
                 ) : paymentMethod === 'credit' || paymentMethod === 'debit' ? (
                   <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
@@ -499,24 +520,51 @@ const Checkout = () => {
                 </div>
 
                 {/* Botão de Finalizar */}
-                <Button 
-                  onClick={handlePayment}
-                  disabled={isProcessing}
-                  className="w-full shadow-warm hover:shadow-food-glow transition-all duration-300"
-                  size="lg"
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Processando...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Finalizar Pedido
-                    </>
-                  )}
-                </Button>
+                {paymentMethod === 'mercadopago' ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground text-center">
+                      Clique no botão do Mercado Pago acima para finalizar o pagamento
+                    </p>
+                    <Button 
+                      onClick={handlePayment}
+                      disabled={isProcessing}
+                      variant="outline"
+                      className="w-full"
+                      size="lg"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Processando...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Finalizar Pedido (Método Alternativo)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    onClick={handlePayment}
+                    disabled={isProcessing}
+                    className="w-full shadow-warm hover:shadow-food-glow transition-all duration-300"
+                    size="lg"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Processando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Finalizar Pedido
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 {paymentMethod === 'pix' && (
                   <p className="text-xs text-muted-foreground text-center">
