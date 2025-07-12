@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
+import { orderService } from '@/services/orderService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -60,16 +61,47 @@ const Checkout = () => {
 
     setIsProcessing(true);
 
-    // Simular processamento de pagamento
-    setTimeout(() => {
+    try {
+      // Criar pedido
+      const order = await orderService.createOrder(
+        state.items,
+        {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          zipCode: formData.zipCode,
+          neighborhood: formData.neighborhood,
+          complement: formData.complement
+        },
+        {
+          method: paymentMethod as any,
+          cardNumber: formData.cardNumber,
+          cardExpiry: formData.cardExpiry,
+          cardCvv: formData.cardCvv,
+          cardName: formData.cardName
+        },
+        formData.notes
+      );
+
       setIsProcessing(false);
+      
       toast({
         title: "Pedido realizado com sucesso! 🎉",
-        description: "Seu pedido foi confirmado e está sendo preparado. Entraremos em contato em breve!",
+        description: `Pedido #${order.id} confirmado! Entraremos em contato em breve.`,
       });
+
       clearCart();
       navigate('/');
-    }, 3000);
+    } catch (error) {
+      setIsProcessing(false);
+      toast({
+        title: "Erro ao processar pedido",
+        description: "Tente novamente ou entre em contato conosco.",
+        variant: "destructive"
+      });
+    }
   };
 
   const totalItems = state.itemCount;
