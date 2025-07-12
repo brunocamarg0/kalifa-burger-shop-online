@@ -22,7 +22,8 @@ import {
   DollarSign,
   Users,
   Package,
-  AlertCircle
+  AlertCircle,
+  LogOut
 } from 'lucide-react';
 
 const Admin = () => {
@@ -33,6 +34,12 @@ const Admin = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+    navigate('/admin/login');
+  };
 
   useEffect(() => {
     loadOrders();
@@ -166,14 +173,24 @@ const Admin = () => {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 mb-4 hover:bg-muted/50"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar ao Site
-          </Button>
+          <div className="flex justify-between items-start mb-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 hover:bg-muted/50"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Voltar ao Site
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleLogout}
+              className="flex items-center gap-2 hover:bg-red-50 hover:text-red-600"
+            >
+              <LogOut className="w-4 h-4" />
+              Sair
+            </Button>
+          </div>
           <h1 className="text-4xl md:text-5xl font-bold font-display">
             Painel 
             <span className="bg-hero-gradient bg-clip-text text-transparent"> Administrativo</span>
