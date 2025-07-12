@@ -36,9 +36,9 @@ export const createPaymentPreference = async (items: CartItem[], orderId: string
         currency_id: 'BRL'
       })),
       back_urls: {
-        success: `${window.location.origin}/payment/success?order_id=${orderId}`,
-        failure: `${window.location.origin}/payment/failure?order_id=${orderId}`,
-        pending: `${window.location.origin}/payment/pending?order_id=${orderId}`
+        success: `http://localhost:8080/payment/success?order_id=${orderId}`,
+        failure: `http://localhost:8080/payment/failure?order_id=${orderId}`,
+        pending: `http://localhost:8080/payment/pending?order_id=${orderId}`
       },
       auto_return: 'approved',
       external_reference: orderId
@@ -54,7 +54,9 @@ export const createPaymentPreference = async (items: CartItem[], orderId: string
     });
 
     if (!response.ok) {
-      throw new Error('Erro ao criar preferência de pagamento');
+      const errorData = await response.text();
+      console.error('Resposta da API:', errorData);
+      throw new Error(`Erro ao criar preferência de pagamento: ${response.status}`);
     }
 
     const data = await response.json();

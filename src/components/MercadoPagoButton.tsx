@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
 import { createPaymentPreference, CartItem } from '../services/mercadopagoService';
 import { Button } from './ui/button';
-import { Loader2, CreditCard } from 'lucide-react';
+import { Loader2, CreditCard, ExternalLink } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 
 // Inicializar Mercado Pago
@@ -31,7 +31,9 @@ const MercadoPagoButton = ({
     const createPreference = async () => {
       try {
         setLoading(true);
+        console.log('Criando preferência para:', items);
         const preferenceId = await createPaymentPreference(items, orderId);
+        console.log('Preferência criada:', preferenceId);
         setPreferenceId(preferenceId);
       } catch (error) {
         console.error('Erro ao criar preferência:', error);
@@ -50,6 +52,12 @@ const MercadoPagoButton = ({
       createPreference();
     }
   }, [items, orderId, toast, onPaymentError]);
+
+  const handleDirectPayment = () => {
+    if (preferenceId) {
+      window.open(`https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`, '_blank');
+    }
+  };
 
   if (loading) {
     return (
@@ -70,11 +78,19 @@ const MercadoPagoButton = ({
   }
 
   return (
-    <div className="w-full">
-      <Wallet 
-        initialization={{ preferenceId }}
-        customization={{ texts: { valueProp: 'smart_option' } }}
-      />
+    <div className="w-full space-y-3">
+      <Button 
+        onClick={handleDirectPayment}
+        className="w-full shadow-warm hover:shadow-food-glow transition-all duration-300"
+        size="lg"
+      >
+        <ExternalLink className="mr-2 h-4 w-4" />
+        Pagar com Mercado Pago
+      </Button>
+      
+      <div className="text-xs text-muted-foreground text-center">
+        Pagamento seguro via Mercado Pago
+      </div>
     </div>
   );
 };
