@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { orderService } from '@/services/orderService';
 import { Order, OrderStatus } from '@/types/order';
@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { 
   ArrowLeft, 
@@ -23,28 +26,135 @@ import {
   Users,
   Package,
   AlertCircle,
-  LogOut
+  LogOut,
+  Search,
+  Filter,
+  Bell,
+  Calendar,
+  TrendingUp,
+  MapPin,
+  Phone,
+  Mail
 } from 'lucide-react';
 
 const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [valueFilter, setValueFilter] = useState('all');
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastOrderCount, setLastOrderCount] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const intervalRef = useRef<NodeJS.Timeout>();
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminUser');
-    navigate('/admin/login');
+    navigate('/painel-da-dona');
   };
 
   useEffect(() => {
     loadOrders();
     loadStats();
-  }, []);
+    
+    // Configurar atualização automática a cada 30 segundos
+    if (autoRefresh) {
+      intervalRef.current = setInterval(() => {
+        loadOrders();
+        loadStats();
+      }, 30000);
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [autoRefresh]);
+
+  // Verificar novos pedidos e tocar notificação
+  useEffect(() => {
+    if (orders.length > lastOrderCount && lastOrderCount > 0) {
+      playNotificationSound();
+      toast({
+        title: "Novo pedido recebido! 🎉",
+        description: `Pedido #${orders[0].id} acabou de chegar`,
+      });
+    }
+    setLastOrderCount(orders.length);
+  }, [orders.length]);
+
+  // Filtrar pedidos baseado nos filtros
+  useEffect(() => {
+    let filtered = orders;
+
+    // Filtro por aba
+    if (activeTab !== 'all') {
+      filtered = filtered.filter(order => order.status === activeTab);
+    }
+
+    // Filtro por busca
+    if (searchTerm) {
+      filtered = filtered.filter(order => 
+        order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.customer.phone.includes(searchTerm) ||
+        order.customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.id.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filtro por data
+    if (dateFilter !== 'all') {
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      
+      switch (dateFilter) {
+        case 'today':
+          filtered = filtered.filter(order => new Date(order.createdAt) >= startOfDay);
+          break;
+        case 'week':
+          const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+          filtered = filtered.filter(order => new Date(order.createdAt) >= weekAgo);
+          break;
+        case 'month':
+          const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+          filtered = filtered.filter(order => new Date(order.createdAt) >= monthAgo);
+          break;
+      }
+    }
+
+    // Filtro por valor
+    if (valueFilter !== 'all') {
+      switch (valueFilter) {
+        case 'low':
+          filtered = filtered.filter(order => order.finalTotal <= 30);
+          break;
+        case 'medium':
+          filtered = filtered.filter(order => order.finalTotal > 30 && order.finalTotal <= 60);
+          break;
+        case 'high':
+          filtered = filtered.filter(order => order.finalTotal > 60);
+          break;
+      }
+    }
+
+    setFilteredOrders(filtered);
+  }, [orders, activeTab, searchTerm, dateFilter, valueFilter]);
+
+  const playNotificationSound = () => {
+    if (audioRef.current) {
+      audioRef.current.play().catch(() => {
+        // Ignorar erro se o áudio não puder ser reproduzido
+      });
+    }
+  };
 
   const loadOrders = async () => {
     try {
@@ -152,9 +262,12 @@ const Admin = () => {
     URL.revokeObjectURL(url);
   };
 
-  const filteredOrders = activeTab === 'all' 
-    ? orders 
-    : orders.filter(order => order.status === activeTab);
+  const clearFilters = () => {
+    setSearchTerm('');
+    setDateFilter('all');
+    setValueFilter('all');
+    setActiveTab('all');
+  };
 
   if (isLoading) {
     return (
@@ -170,6 +283,11 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-muted/20 py-20">
+      {/* Áudio para notificações */}
+      <audio ref={audioRef} preload="auto">
+        <source src="/notification.mp3" type="audio/mpeg" />
+      </audio>
+
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
@@ -182,14 +300,24 @@ const Admin = () => {
               <ArrowLeft className="w-4 h-4" />
               Voltar ao Site
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleLogout}
-              className="flex items-center gap-2 hover:bg-red-50 hover:text-red-600"
-            >
-              <LogOut className="w-4 h-4" />
-              Sair
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`flex items-center gap-2 ${autoRefresh ? 'bg-green-50 text-green-600' : ''}`}
+              >
+                <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
+                {autoRefresh ? 'Auto ON' : 'Auto OFF'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleLogout}
+                className="flex items-center gap-2 hover:bg-red-50 hover:text-red-600"
+              >
+                <LogOut className="w-4 h-4" />
+                Sair
+              </Button>
+            </div>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold font-display">
             Painel 
@@ -200,7 +328,7 @@ const Admin = () => {
           </p>
         </div>
 
-        {/* Estatísticas */}
+        {/* Estatísticas Melhoradas */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card className="shadow-warm">
@@ -209,6 +337,7 @@ const Admin = () => {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Pedidos Hoje</p>
                     <p className="text-2xl font-bold">{stats.todayOrders}</p>
+                    <p className="text-xs text-green-600">+{stats.todayOrders > 0 ? Math.round((stats.todayOrders / Math.max(stats.totalOrders, 1)) * 100) : 0}% do total</p>
                   </div>
                   <ShoppingCart className="w-8 h-8 text-primary" />
                 </div>
@@ -221,6 +350,7 @@ const Admin = () => {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Receita Hoje</p>
                     <p className="text-2xl font-bold">{formatCurrency(stats.todayRevenue)}</p>
+                    <p className="text-xs text-green-600">Média: {formatCurrency(stats.todayOrders > 0 ? stats.todayRevenue / stats.todayOrders : 0)}</p>
                   </div>
                   <DollarSign className="w-8 h-8 text-green-500" />
                 </div>
@@ -233,6 +363,7 @@ const Admin = () => {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Em Preparação</p>
                     <p className="text-2xl font-bold">{stats.preparingOrders}</p>
+                    <p className="text-xs text-orange-600">Aguardando finalização</p>
                   </div>
                   <RefreshCw className="w-8 h-8 text-orange-500" />
                 </div>
@@ -245,6 +376,7 @@ const Admin = () => {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Em Entrega</p>
                     <p className="text-2xl font-bold">{stats.deliveringOrders}</p>
+                    <p className="text-xs text-purple-600">A caminho do cliente</p>
                   </div>
                   <Truck className="w-8 h-8 text-purple-500" />
                 </div>
@@ -252,6 +384,52 @@ const Admin = () => {
             </Card>
           </div>
         )}
+
+        {/* Filtros e Busca */}
+        <Card className="mb-8 shadow-warm">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por cliente, telefone, email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por data" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as datas</SelectItem>
+                  <SelectItem value="today">Hoje</SelectItem>
+                  <SelectItem value="week">Última semana</SelectItem>
+                  <SelectItem value="month">Último mês</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={valueFilter} onValueChange={setValueFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por valor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os valores</SelectItem>
+                  <SelectItem value="low">Até R$ 30</SelectItem>
+                  <SelectItem value="medium">R$ 30 - R$ 60</SelectItem>
+                  <SelectItem value="high">Acima de R$ 60</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                Limpar Filtros
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Ações */}
         <div className="flex flex-wrap gap-4 mb-8">
@@ -263,12 +441,16 @@ const Admin = () => {
             <Download className="w-4 h-4 mr-2" />
             Exportar Pedidos
           </Button>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Bell className="w-4 h-4" />
+            Notificações {autoRefresh ? 'ativadas' : 'desativadas'}
+          </div>
         </div>
 
         {/* Tabs de Pedidos */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-8">
-            <TabsTrigger value="all">Todos ({orders.length})</TabsTrigger>
+            <TabsTrigger value="all">Todos ({filteredOrders.length})</TabsTrigger>
             <TabsTrigger value="pending">Pendentes ({orders.filter(o => o.status === 'pending').length})</TabsTrigger>
             <TabsTrigger value="confirmed">Confirmados ({orders.filter(o => o.status === 'confirmed').length})</TabsTrigger>
             <TabsTrigger value="preparing">Preparando ({orders.filter(o => o.status === 'preparing').length})</TabsTrigger>
@@ -284,6 +466,11 @@ const Admin = () => {
                 <CardContent className="p-8 text-center">
                   <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">Nenhum pedido encontrado</p>
+                  {(searchTerm || dateFilter !== 'all' || valueFilter !== 'all') && (
+                    <Button onClick={clearFilters} variant="outline" className="mt-4">
+                      Limpar filtros
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -304,21 +491,41 @@ const Admin = () => {
                               <span className="text-sm text-muted-foreground">
                                 {formatDate(order.createdAt)}
                               </span>
+                              <Badge variant="outline" className="ml-auto">
+                                {formatCurrency(order.finalTotal)}
+                              </Badge>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                               <div>
-                                <h4 className="font-medium mb-2">Cliente</h4>
-                                <p className="text-sm">{order.customer.name}</p>
-                                <p className="text-sm text-muted-foreground">{order.customer.phone}</p>
-                                <p className="text-sm text-muted-foreground">{order.customer.email}</p>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <Users className="w-4 h-4" />
+                                  Cliente
+                                </h4>
+                                <p className="text-sm font-medium">{order.customer.name}</p>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Phone className="w-3 h-3" />
+                                  {order.customer.phone}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Mail className="w-3 h-3" />
+                                  {order.customer.email}
+                                </div>
                               </div>
                               <div>
-                                <h4 className="font-medium mb-2">Endereço</h4>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <MapPin className="w-4 h-4" />
+                                  Endereço
+                                </h4>
                                 <p className="text-sm">{order.customer.address}</p>
                                 <p className="text-sm text-muted-foreground">
                                   {order.customer.neighborhood}, {order.customer.city}
                                 </p>
+                                {order.customer.complement && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {order.customer.complement}
+                                  </p>
+                                )}
                               </div>
                             </div>
 
@@ -342,7 +549,9 @@ const Admin = () => {
                             {order.notes && (
                               <div className="mb-4">
                                 <h4 className="font-medium mb-2">Observações</h4>
-                                <p className="text-sm text-muted-foreground">{order.notes}</p>
+                                <p className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                                  {order.notes}
+                                </p>
                               </div>
                             )}
                           </div>
