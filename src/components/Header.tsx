@@ -1,8 +1,13 @@
 import { useState } from 'react';
-import { Menu, X, ShoppingBag, Phone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Menu, X, ShoppingBag, Phone, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useCart } from '@/contexts/CartContext';
+import { Badge } from '@/components/ui/badge';
 
 const Header = () => {
+  const navigate = useNavigate();
+  const { state } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const scrollToSection = (sectionId: string) => {
@@ -12,6 +17,8 @@ const Header = () => {
       setIsMenuOpen(false);
     }
   };
+
+  const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
@@ -56,6 +63,23 @@ const Header = () => {
             <Phone className="w-4 h-4 mr-2" />
             Ligar
           </Button>
+          
+          {/* Carrinho Button */}
+          {totalItems > 0 && (
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/checkout')}
+              className="relative"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Carrinho
+              <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs">
+                {totalItems}
+              </Badge>
+            </Button>
+          )}
+          
           <Button 
             size="sm"
             onClick={() => scrollToSection('cardapio')}
@@ -107,6 +131,23 @@ const Header = () => {
                 <Phone className="w-4 h-4 mr-2" />
                 Ligar
               </Button>
+              
+              {/* Carrinho Button Mobile */}
+              {totalItems > 0 && (
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/checkout')}
+                  className="flex-1 relative"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Carrinho
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs">
+                    {totalItems}
+                  </Badge>
+                </Button>
+              )}
+              
               <Button 
                 size="sm"
                 onClick={() => scrollToSection('cardapio')}

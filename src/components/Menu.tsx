@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Star, Flame } from 'lucide-react';
+import { ShoppingCart, Star, Flame, Plus } from 'lucide-react';
+import { useCart } from '@/contexts/CartContext';
+import { useToast } from '@/hooks/use-toast';
 import classicBurger from '@/assets/classic-burger.jpg';
 import baconBurger from '@/assets/bacon-burger.jpg';
 import bbqBurger from '@/assets/bbq-burger.jpg';
@@ -82,11 +85,29 @@ const categories = [
 ];
 
 const Menu = () => {
+  const navigate = useNavigate();
+  const { addItem, state } = useCart();
+  const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   const filteredItems = selectedCategory === 'all' 
     ? menuItems 
     : menuItems.filter(item => item.category === selectedCategory);
+
+  const handleAddToCart = (item: MenuItem) => {
+    addItem({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      image: item.image,
+      description: item.description
+    });
+    
+    toast({
+      title: "Item adicionado!",
+      description: `${item.name} foi adicionado ao carrinho.`,
+    });
+  };
 
   const handleOrder = (item: MenuItem) => {
     const message = `Olá! Gostaria de pedir:\n\n🍔 ${item.name}\n💰 R$ ${item.price.toFixed(2)}\n\n${item.description}`;
@@ -106,6 +127,20 @@ const Menu = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Hambúrgueres artesanais feitos com ingredientes frescos e carnes selecionadas
           </p>
+          
+          {/* Carrinho Button */}
+          {state.items.length > 0 && (
+            <div className="flex justify-center">
+              <Button 
+                onClick={() => navigate('/checkout')}
+                className="shadow-warm hover:shadow-food-glow transition-all duration-300"
+                size="lg"
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                Ver Carrinho ({state.items.reduce((sum, item) => sum + item.quantity, 0)})
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Category Filter */}
@@ -167,13 +202,23 @@ const Menu = () => {
               </CardHeader>
 
               <CardContent className="pt-0">
-                <Button 
-                  onClick={() => handleOrder(item)}
-                  className="w-full shadow-warm hover:shadow-food-glow transition-all duration-300"
-                >
-                  <ShoppingCart className="w-4 h-4 mr-2" />
-                  Pedir Agora
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => handleAddToCart(item)}
+                    className="flex-1 shadow-warm hover:shadow-food-glow transition-all duration-300"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Adicionar
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => handleOrder(item)}
+                    className="shadow-warm hover:shadow-food-glow transition-all duration-300"
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    WhatsApp
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
