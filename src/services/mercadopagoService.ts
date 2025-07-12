@@ -30,15 +30,20 @@ export interface PaymentPreference {
 // Função para criar preferência de pagamento
 export const createPaymentPreference = async (items: CartItem[], orderId: string) => {
   try {
+    // Detectar o ambiente (desenvolvimento vs produção)
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://kalifa-burger-shop-online.vercel.app'
+      : window.location.origin;
+
     const preference: PaymentPreference = {
       items: items.map(item => ({
         ...item,
         currency_id: 'BRL'
       })),
       back_urls: {
-        success: `http://localhost:8080/payment/success?order_id=${orderId}`,
-        failure: `http://localhost:8080/payment/failure?order_id=${orderId}`,
-        pending: `http://localhost:8080/payment/pending?order_id=${orderId}`
+        success: `${baseUrl}/payment/success?order_id=${orderId}`,
+        failure: `${baseUrl}/payment/failure?order_id=${orderId}`,
+        pending: `${baseUrl}/payment/pending?order_id=${orderId}`
       },
       auto_return: 'approved',
       external_reference: orderId
