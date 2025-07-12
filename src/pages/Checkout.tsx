@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, CreditCard, ShoppingCart, Trash2, Plus, Minus, CheckCircle, MapPin, Phone, Mail, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import MercadoPagoButton from '@/components/MercadoPagoButton';
+import { CartItem } from '@/services/mercadopagoService';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -293,6 +295,7 @@ const Checkout = () => {
                     <SelectValue placeholder="Escolha o método de pagamento" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="mercadopago">Mercado Pago (Cartão, PIX, Boleto)</SelectItem>
                     <SelectItem value="pix">PIX (Pagamento instantâneo)</SelectItem>
                     <SelectItem value="credit">Cartão de Crédito</SelectItem>
                     <SelectItem value="debit">Cartão de Débito</SelectItem>
@@ -300,7 +303,39 @@ const Checkout = () => {
                   </SelectContent>
                 </Select>
 
-                {paymentMethod === 'credit' || paymentMethod === 'debit' ? (
+                {paymentMethod === 'mercadopago' ? (
+                  <div className="p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                      <CreditCard className="w-4 h-4" />
+                      Pagamento seguro via Mercado Pago (Cartão, PIX, Boleto)
+                    </div>
+                    <MercadoPagoButton
+                      items={state.items.map((item): CartItem => ({
+                        id: item.id,
+                        title: item.name,
+                        quantity: item.quantity,
+                        unit_price: item.price,
+                        description: item.description
+                      }))}
+                      orderId={`ORDER-${Date.now()}`}
+                      total={finalTotal}
+                      onPaymentSuccess={(paymentId) => {
+                        toast({
+                          title: "Pagamento aprovado! 🎉",
+                          description: `Pagamento processado com sucesso. ID: ${paymentId}`,
+                        });
+                        // Aqui você pode redirecionar ou limpar o carrinho
+                      }}
+                      onPaymentError={(error) => {
+                        toast({
+                          title: "Erro no pagamento",
+                          description: error,
+                          variant: "destructive",
+                        });
+                      }}
+                    />
+                  </div>
+                ) : paymentMethod === 'credit' || paymentMethod === 'debit' ? (
                   <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
                     <div>
                       <Label htmlFor="cardName">Nome no Cartão</Label>
@@ -354,7 +389,7 @@ const Checkout = () => {
                   </div>
                 ) : paymentMethod === 'cash' ? (
                   <div className="p-4 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-sm text-muted-foreground">
                       <CreditCard className="w-4 h-4" />
                       Pagamento em dinheiro no momento da entrega
                     </div>
