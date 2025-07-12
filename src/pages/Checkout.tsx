@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, CreditCard, ShoppingCart, Trash2, Plus, Minus, CheckCircle, MapPin, Phone, Mail, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import MercadoPagoButton from '@/components/MercadoPagoButton';
+import PixPayment from '@/components/PixPayment';
 import { CartItem } from '@/services/mercadopagoService';
 
 const Checkout = () => {
@@ -403,10 +404,34 @@ const Checkout = () => {
                   </div>
                 ) : paymentMethod === 'pix' ? (
                   <div className="p-4 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CreditCard className="w-4 h-4" />
-                      O QR Code do PIX será gerado após confirmar o pedido
-                    </div>
+                    {!formData.name || !formData.email || !formData.phone ? (
+                      <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                        <p className="text-sm text-yellow-800">
+                          Preencha os dados pessoais obrigatórios (Nome, E-mail e Telefone) para continuar com o pagamento.
+                        </p>
+                      </div>
+                    ) : (
+                      <PixPayment
+                        amount={finalTotal}
+                        orderId={`ORDER-${Date.now()}`}
+                        customerName={formData.name}
+                        onPaymentSuccess={() => {
+                          toast({
+                            title: "PIX processado! 🎉",
+                            description: "Aguardando confirmação do pagamento.",
+                          });
+                          clearCart();
+                          navigate('/payment/success?order_id=' + `ORDER-${Date.now()}`);
+                        }}
+                        onPaymentError={(error) => {
+                          toast({
+                            title: "Erro no PIX",
+                            description: error,
+                            variant: "destructive",
+                          });
+                        }}
+                      />
+                    )}
                   </div>
                 ) : paymentMethod === 'cash' ? (
                   <div className="p-4 bg-muted/30 rounded-lg">
