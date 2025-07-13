@@ -231,54 +231,23 @@ class MercadoPagoService {
     orderId: string
   ): Promise<any> {
     try {
-      if (!this.isConfigured()) {
-        throw new Error('Token do Mercado Pago não configurado');
-      }
-
-      console.log('📱 Gerando QR Code PIX...');
-
-      const paymentData = {
-        transaction_amount: amount,
-        description: `Pedido #${orderId} - Kalifa Burger`,
-        payment_method_id: 'pix',
-        payer: {
-          email: customerData.email,
-          first_name: customerData.name.split(' ')[0],
-          last_name: customerData.name.split(' ').slice(1).join(' ')
-        },
-        external_reference: orderId
-      };
-
-      const response = await fetch(`${this.BASE_URL}/v1/payments`, {
+      // Chamar o endpoint backend
+      const response = await fetch('/api/proxy-pix', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.ACCESS_TOKEN}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(paymentData)
+        body: JSON.stringify({ amount, customerData, orderId })
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Erro ao gerar PIX');
+        throw new Error(errorData.error || 'Erro ao gerar PIX');
       }
 
       const payment = await response.json();
-      
-      console.log('✅ PIX gerado com sucesso!');
-      console.log('📱 QR Code:', payment.point_of_interaction.transaction_data.qr_code);
-      console.log('📱 QR Code Base64:', payment.point_of_interaction.transaction_data.qr_code_base64);
-
-      return {
-        success: true,
-        paymentId: payment.id,
-        qrCode: payment.point_of_interaction.transaction_data.qr_code,
-        qrCodeBase64: payment.point_of_interaction.transaction_data.qr_code_base64,
-        status: payment.status
-      };
-
+      return payment;
     } catch (error) {
-      console.error('❌ Erro ao gerar PIX:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erro desconhecido'
