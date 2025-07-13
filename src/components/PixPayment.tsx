@@ -28,6 +28,7 @@ const PixPayment = ({
   const [pixData, setPixData] = useState<any>(null);
   const [copied, setCopied] = useState(false);
   const [orderCreated, setOrderCreated] = useState(false);
+  const [realOrderId, setRealOrderId] = useState<string | null>(null);
   const { toast } = useToast();
   const { state } = useCart();
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -70,6 +71,7 @@ const PixPayment = ({
         },
         customerData.notes
       );
+      setRealOrderId(order.id);
       
       console.log('✅ Pedido criado com sucesso! ID:', order.id);
       setOrderCreated(true);
@@ -153,15 +155,15 @@ const PixPayment = ({
   }, [amount, orderCreated, customerData]);
 
   useEffect(() => {
-    if (pixData && pixData.success && orderId) {
+    if (pixData && pixData.success && realOrderId) {
       pollingRef.current = setInterval(() => {
-        checkOrderStatus(orderId);
+        checkOrderStatus(realOrderId);
       }, 5000);
       return () => {
         if (pollingRef.current) clearInterval(pollingRef.current);
       };
     }
-  }, [pixData, orderId]);
+  }, [pixData, realOrderId]);
 
   // Verificar se o Mercado Pago está configurado
   const isConfigured = import.meta.env.VITE_MERCADOPAGO_ACCESS_TOKEN;
@@ -265,7 +267,7 @@ const PixPayment = ({
               </div>
               <div className="flex justify-between text-sm">
                 <span>Pedido:</span>
-                <span className="font-medium">{orderId}</span>
+                <span className="font-medium">{realOrderId || orderId}</span>
               </div>
               <div className="flex justify-between text-sm text-green-600">
                 <span>Status:</span>
