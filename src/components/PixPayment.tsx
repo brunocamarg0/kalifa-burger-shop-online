@@ -155,15 +155,19 @@ const PixPayment = ({
   }, [amount, orderCreated, customerData]);
 
   useEffect(() => {
-    if (pixData && pixData.success && realOrderId) {
-      pollingRef.current = setInterval(() => {
-        checkOrderStatus(realOrderId);
-      }, 5000);
-      return () => {
-        if (pollingRef.current) clearInterval(pollingRef.current);
-      };
+    if (realOrderId) {
+      const unsubscribe = orderService.onOrderStatusChange(realOrderId, (order) => {
+        if (order && order.status === 'confirmed') {
+          toast({
+            title: 'Pagamento realizado com sucesso! 🎉',
+            description: 'Seu pagamento PIX foi aprovado.',
+          });
+          onPaymentSuccess?.();
+        }
+      });
+      return () => unsubscribe();
     }
-  }, [pixData, realOrderId]);
+  }, [realOrderId]);
 
   // Verificar se o Mercado Pago está configurado
   const isConfigured = import.meta.env.VITE_MERCADOPAGO_ACCESS_TOKEN;

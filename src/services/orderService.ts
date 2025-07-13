@@ -9,7 +9,8 @@ import {
   query, 
   where, 
   orderBy,
-  serverTimestamp 
+  serverTimestamp,
+  onSnapshot
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -359,6 +360,17 @@ class OrderService {
     // sobre a atualização do status do pedido
   }
 
+  // Escutar status do pedido em tempo real
+  onOrderStatusChange(orderId: string, callback: (order: Order | null) => void) {
+    const orderRef = doc(db, this.COLLECTION_NAME, orderId);
+    return onSnapshot(orderRef, (docSnap) => {
+      if (docSnap.exists()) {
+        callback({ id: docSnap.id, ...docSnap.data() } as Order);
+      } else {
+        callback(null);
+      }
+    });
+  }
 
 
   // Exportar dados dos pedidos (para backup)
