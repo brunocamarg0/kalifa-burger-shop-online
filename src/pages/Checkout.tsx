@@ -392,8 +392,8 @@ const Checkout = () => {
                         }}
                         onPaymentSuccess={() => {
                           toast({
-                            title: "PIX processado! 🎉",
-                            description: "Aguardando confirmação do pagamento.",
+                            title: "Pagamento realizado com sucesso! 🎉",
+                            description: "Seu pagamento via PIX foi aprovado.",
                           });
                           clearCart();
                           navigate('/payment/success?order_id=' + `ORDER-${Date.now()}`);
