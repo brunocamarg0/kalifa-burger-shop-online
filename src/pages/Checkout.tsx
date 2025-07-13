@@ -108,8 +108,7 @@ const Checkout = () => {
   };
 
   const totalItems = state.itemCount;
-  const deliveryFee = state.total > 0 ? 5.00 : 0;
-  const finalTotal = state.total + deliveryFee;
+  const finalTotal = state.total;
 
   if (state.items.length === 0) {
     return (
@@ -513,10 +512,6 @@ const Checkout = () => {
                   <div className="flex justify-between text-sm">
                     <span>Subtotal:</span>
                     <span>R$ {state.total.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Taxa de entrega:</span>
-                    <span>R$ {deliveryFee.toFixed(2)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
