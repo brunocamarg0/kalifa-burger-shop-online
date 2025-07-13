@@ -26,6 +26,23 @@ export interface PaymentInfo {
   cardName?: string;
 }
 
+export interface DeliveryInfo {
+  provider: 'ifood' | 'internal' | 'manual';
+  deliveryId?: string;
+  deliveryPartner?: {
+    name: string;
+    phone: string;
+    vehicle: string;
+  };
+  trackingUrl?: string;
+  estimatedDeliveryTime?: Date;
+  currentLocation?: {
+    latitude: number;
+    longitude: number;
+  };
+  status?: 'accepted' | 'rejected' | 'pending' | 'preparing' | 'ready' | 'picked_up' | 'delivering' | 'delivered' | 'cancelled';
+}
+
 export interface Order {
   id: string;
   items: OrderItem[];
@@ -39,6 +56,7 @@ export interface Order {
   createdAt: Date;
   updatedAt: Date;
   estimatedDeliveryTime?: Date;
+  delivery?: DeliveryInfo;
 }
 
 export type OrderStatus = 

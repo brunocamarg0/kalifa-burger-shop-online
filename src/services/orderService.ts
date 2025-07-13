@@ -1,4 +1,4 @@
-import { Order, OrderStatus, CustomerInfo, PaymentInfo } from '@/types/order';
+import { Order, OrderStatus, CustomerInfo, PaymentInfo, DeliveryInfo } from '@/types/order';
 import { CartItem } from '@/contexts/CartContext';
 import { 
   collection, 
@@ -13,6 +13,7 @@ import {
   onSnapshot
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { ifoodService, IFoodDeliveryResponse } from './ifoodService';
 
 // Serviço de pedidos usando Firebase Firestore com fallback para localStorage
 class OrderService {
@@ -193,6 +194,165 @@ class OrderService {
     } catch (error) {
       console.error('❌ Erro ao atualizar no Firebase, usando fallback localStorage:', error);
       return this.updateOrderStatusFallback(orderId, status);
+    }
+  }
+
+  // Solicitar entrega no iFood
+  async requestIFoodDelivery(orderId: string): Promise<Order> {
+    try {
+      const order = await this.getOrderById(orderId);
+      if (!order) {
+        throw new Error('Pedido não encontrado');
+      }
+
+      console.log('🚚 Solicitando entrega iFood para pedido:', orderId);
+
+      let deliveryResponse: IFoodDeliveryResponse;
+
+      // Verificar se o iFood está configurado
+      if (ifoodService.isConfigured()) {
+        deliveryResponse = await ifoodService.requestDelivery(order);
+      } else {
+        // Usar simulação para desenvolvimento
+        deliveryResponse = await ifoodService.simulateDelivery(order);
+      }
+
+      // Criar informações de entrega
+      const deliveryInfo: DeliveryInfo = {
+        provider: 'ifood',
+        deliveryId: deliveryResponse.deliveryId,
+        deliveryPartner: deliveryResponse.deliveryPartner,
+        trackingUrl: deliveryResponse.trackingUrl,
+        estimatedDeliveryTime: deliveryResponse.estimatedDeliveryTime,
+        status: deliveryResponse.status
+      };
+
+      // Atualizar pedido com informações de entrega
+      const orderRef = doc(db, this.COLLECTION_NAME, orderId);
+      await updateDoc(orderRef, {
+        delivery: deliveryInfo,
+        status: 'preparing',
+        updatedAt: serverTimestamp()
+      });
+
+      console.log('✅ Entrega iFood solicitada com sucesso!');
+
+      // Buscar pedido atualizado
+      const updatedOrder = await this.getOrderById(orderId);
+      if (!updatedOrder) {
+        throw new Error('Pedido não encontrado após atualização');
+      }
+
+      return updatedOrder;
+
+    } catch (error) {
+      console.error('❌ Erro ao solicitar entrega iFood:', error);
+      throw error;
+    }
+  }
+
+  // Atualizar status da entrega
+  async updateDeliveryStatus(orderId: string, deliveryStatus: string): Promise<Order> {
+    try {
+      const order = await this.getOrderById(orderId);
+      if (!order || !order.delivery) {
+        throw new Error('Pedido ou entrega não encontrada');
+      }
+
+      console.log('🔄 Atualizando status da entrega:', orderId, 'para:', deliveryStatus);
+
+      // Mapear status do iFood para status interno
+      const orderStatus = ifoodService.mapIFoodStatusToOrderStatus(deliveryStatus);
+
+      // Atualizar informações de entrega
+      const updatedDelivery: DeliveryInfo = {
+        ...order.delivery,
+        status: deliveryStatus as any
+      };
+
+      const orderRef = doc(db, this.COLLECTION_NAME, orderId);
+      await updateDoc(orderRef, {
+        delivery: updatedDelivery,
+        status: orderStatus,
+        updatedAt: serverTimestamp()
+      });
+
+      console.log('✅ Status da entrega atualizado com sucesso!');
+
+      // Buscar pedido atualizado
+      const updatedOrder = await this.getOrderById(orderId);
+      if (!updatedOrder) {
+        throw new Error('Pedido não encontrado após atualização');
+      }
+
+      return updatedOrder;
+
+    } catch (error) {
+      console.error('❌ Erro ao atualizar status da entrega:', error);
+      throw error;
+    }
+  }
+
+  // Buscar status da entrega no iFood
+  async refreshDeliveryStatus(orderId: string): Promise<Order> {
+    try {
+      const order = await this.getOrderById(orderId);
+      if (!order || !order.delivery?.deliveryId) {
+        throw new Error('Pedido ou ID de entrega não encontrado');
+      }
+
+      console.log('🔄 Buscando status da entrega no iFood:', order.delivery.deliveryId);
+
+      let deliveryStatus;
+
+      // Verificar se o iFood está configurado
+      if (ifoodService.isConfigured()) {
+        deliveryStatus = await ifoodService.getDeliveryStatus(order.delivery.deliveryId);
+      } else {
+        // Usar simulação para desenvolvimento
+        deliveryStatus = await ifoodService.simulateStatusUpdate(order.delivery.deliveryId);
+      }
+
+      // Atualizar pedido com novo status
+      return await this.updateDeliveryStatus(orderId, deliveryStatus.status);
+
+    } catch (error) {
+      console.error('❌ Erro ao buscar status da entrega:', error);
+      throw error;
+    }
+  }
+
+  // Cancelar entrega
+  async cancelDelivery(orderId: string, reason?: string): Promise<Order> {
+    try {
+      const order = await this.getOrderById(orderId);
+      if (!order || !order.delivery?.deliveryId) {
+        throw new Error('Pedido ou ID de entrega não encontrado');
+      }
+
+      console.log('❌ Cancelando entrega:', order.delivery.deliveryId);
+
+      let success = false;
+
+      // Verificar se o iFood está configurado
+      if (ifoodService.isConfigured()) {
+        success = await ifoodService.cancelDelivery(order.delivery.deliveryId, reason);
+      } else {
+        // Simular cancelamento
+        success = true;
+        console.log('🧪 Simulando cancelamento de entrega');
+      }
+
+      if (success) {
+        // Atualizar pedido como cancelado
+        return await this.updateOrderStatus(orderId, 'cancelled');
+      } else {
+        throw new Error('Falha ao cancelar entrega');
+      }
+
+    } catch (error) {
+      console.error('❌ Erro ao cancelar entrega:', error);
+      throw error;
     }
   }
 

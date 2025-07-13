@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { DeliveryManager } from '@/components/DeliveryManager';
 import { 
   ArrowLeft, 
   ShoppingCart, 
@@ -449,7 +450,7 @@ const Admin = () => {
 
         {/* Tabs de Pedidos */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="all">Todos ({filteredOrders.length})</TabsTrigger>
             <TabsTrigger value="pending">Pendentes ({orders.filter(o => o.status === 'pending').length})</TabsTrigger>
             <TabsTrigger value="confirmed">Confirmados ({orders.filter(o => o.status === 'confirmed').length})</TabsTrigger>
@@ -458,6 +459,7 @@ const Admin = () => {
             <TabsTrigger value="delivering">Entregando ({orders.filter(o => o.status === 'delivering').length})</TabsTrigger>
             <TabsTrigger value="delivered">Entregues ({orders.filter(o => o.status === 'delivered').length})</TabsTrigger>
             <TabsTrigger value="cancelled">Cancelados ({orders.filter(o => o.status === 'cancelled').length})</TabsTrigger>
+            <TabsTrigger value="delivery">Entregas ({orders.filter(o => o.delivery).length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="space-y-4">
@@ -697,6 +699,135 @@ const Admin = () => {
             )}
           </TabsContent>
 
+          {/* Aba de Entregas */}
+          <TabsContent value="delivery" className="space-y-4">
+            {orders.filter(o => o.delivery).length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Nenhuma entrega configurada</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Configure entregas para pedidos prontos para entrega
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {orders
+                  .filter(o => o.delivery)
+                  .map((order) => (
+                    <Card key={order.id} className="shadow-warm hover:shadow-lg transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3">
+                              <h3 className="text-lg font-semibold">#{order.id}</h3>
+                              <Badge className={getStatusColor(order.status)}>
+                                {getStatusIcon(order.status)}
+                                <span className="ml-1">{getStatusLabel(order.status)}</span>
+                              </Badge>
+                              <Badge variant="outline" className="ml-auto">
+                                {formatCurrency(order.finalTotal)}
+                              </Badge>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <div>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <Users className="w-4 h-4" />
+                                  Cliente
+                                </h4>
+                                <p className="text-sm font-medium">{order.customer.name}</p>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Phone className="w-3 h-3" />
+                                  {order.customer.phone}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Mail className="w-3 h-3" />
+                                  {order.customer.email}
+                                </div>
+                              </div>
+                              <div>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <MapPin className="w-4 h-4" />
+                                  Endereço
+                                </h4>
+                                <p className="text-sm">{order.customer.address}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {order.customer.neighborhood}, {order.customer.city}
+                                </p>
+                                {order.customer.complement && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {order.customer.complement}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Informações de Entrega */}
+                            {order.delivery && (
+                              <div className="mb-4">
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <Truck className="w-4 h-4" />
+                                  Entrega iFood
+                                </h4>
+                                <div className="bg-blue-50 p-3 rounded-lg space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">ID da Entrega:</span>
+                                    <span className="text-sm text-muted-foreground">{order.delivery.deliveryId}</span>
+                                  </div>
+                                  {order.delivery.deliveryPartner && (
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm font-medium">Entregador:</span>
+                                      <span className="text-sm text-muted-foreground">{order.delivery.deliveryPartner.name}</span>
+                                    </div>
+                                  )}
+                                  {order.delivery.estimatedDeliveryTime && (
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm font-medium">Entrega estimada:</span>
+                                      <span className="text-sm text-muted-foreground">
+                                        {formatDate(order.delivery.estimatedDeliveryTime)}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col gap-2 ml-4">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button size="sm" variant="outline">
+                                  Gerenciar Entrega
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                <DialogHeader>
+                                  <DialogTitle>Gerenciar Entrega - Pedido #{order.id}</DialogTitle>
+                                  <DialogDescription>
+                                    Configure e acompanhe a entrega deste pedido
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <DeliveryManager 
+                                  order={order} 
+                                  onOrderUpdate={(updatedOrder) => {
+                                    // Atualizar a lista de pedidos
+                                    setOrders(prev => 
+                                      prev.map(o => o.id === updatedOrder.id ? updatedOrder : o)
+                                    );
+                                  }} 
+                                />
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            )}
+          </TabsContent>
 
         </Tabs>
       </div>
