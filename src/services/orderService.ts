@@ -13,9 +13,10 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 
-// Serviço de pedidos usando Firebase Firestore
+// Serviço de pedidos usando Firebase Firestore com fallback para localStorage
 class OrderService {
   private readonly COLLECTION_NAME = 'orders';
+  private readonly FALLBACK_KEY = 'kalifa_orders_fallback';
 
   // Salvar pedido
   async createOrder(
@@ -46,9 +47,9 @@ class OrderService {
     };
 
     try {
-      console.log('💾 Salvando pedido no Firebase...');
+      console.log('💾 Tentando salvar pedido no Firebase...');
       const docRef = await addDoc(collection(db, this.COLLECTION_NAME), orderData);
-      console.log('✅ Pedido salvo com sucesso! ID:', docRef.id);
+      console.log('✅ Pedido salvo no Firebase com sucesso! ID:', docRef.id);
       
       // Retornar o pedido com o ID gerado
       const order: Order = {
@@ -63,15 +64,53 @@ class OrderService {
 
       return order;
     } catch (error) {
-      console.error('❌ Erro ao salvar pedido:', error);
-      throw error;
+      console.error('❌ Erro ao salvar no Firebase, usando fallback localStorage:', error);
+      
+      // Fallback para localStorage
+      return this.createOrderFallback(items, customer, payment, notes);
     }
+  }
+
+  // Fallback para localStorage
+  private createOrderFallback(
+    items: CartItem[],
+    customer: CustomerInfo,
+    payment: PaymentInfo,
+    notes?: string
+  ): Order {
+    const order: Order = {
+      id: this.generateOrderId(),
+      items: items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        image: item.image,
+        description: item.description
+      })),
+      customer,
+      payment,
+      status: 'pending',
+      total: items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+      deliveryFee: 5.00,
+      finalTotal: items.reduce((sum, item) => sum + (item.price * item.quantity), 0) + 5.00,
+      notes,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      estimatedDeliveryTime: new Date(Date.now() + 45 * 60 * 1000)
+    };
+
+    console.log('💾 Salvando pedido no localStorage (fallback)...');
+    this.saveOrderFallback(order);
+    console.log('✅ Pedido salvo no localStorage com sucesso! ID:', order.id);
+
+    return order;
   }
 
   // Buscar todos os pedidos (admin)
   async getAllOrders(): Promise<Order[]> {
     try {
-      console.log('🔍 Buscando pedidos no Firebase...');
+      console.log('🔍 Tentando buscar pedidos no Firebase...');
       const querySnapshot = await getDocs(
         query(
           collection(db, this.COLLECTION_NAME),
@@ -90,10 +129,30 @@ class OrderService {
         } as Order);
       });
       
-      console.log('📋 Pedidos encontrados:', orders.length);
+      console.log('📋 Pedidos encontrados no Firebase:', orders.length);
+      
+      // Se não há pedidos no Firebase, tentar localStorage
+      if (orders.length === 0) {
+        console.log('🔍 Nenhum pedido no Firebase, buscando no localStorage...');
+        const fallbackOrders = this.getAllOrdersFallback();
+        console.log('📋 Pedidos encontrados no localStorage:', fallbackOrders.length);
+        return fallbackOrders;
+      }
+      
       return orders;
     } catch (error) {
-      console.error('❌ Erro ao buscar pedidos:', error);
+      console.error('❌ Erro ao buscar no Firebase, usando fallback localStorage:', error);
+      return this.getAllOrdersFallback();
+    }
+  }
+
+  // Fallback para buscar pedidos no localStorage
+  private getAllOrdersFallback(): Order[] {
+    try {
+      const orders = localStorage.getItem(this.FALLBACK_KEY);
+      return orders ? JSON.parse(orders) : [];
+    } catch (error) {
+      console.error('❌ Erro ao buscar no localStorage:', error);
       return [];
     }
   }
@@ -112,7 +171,7 @@ class OrderService {
   // Atualizar status do pedido
   async updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
     try {
-      console.log('🔄 Atualizando status do pedido:', orderId, 'para:', status);
+      console.log('🔄 Tentando atualizar status no Firebase:', orderId, 'para:', status);
       
       const orderRef = doc(db, this.COLLECTION_NAME, orderId);
       await updateDoc(orderRef, {
@@ -126,16 +185,34 @@ class OrderService {
         throw new Error('Pedido não encontrado após atualização');
       }
 
-      console.log('✅ Status atualizado com sucesso!');
+      console.log('✅ Status atualizado no Firebase com sucesso!');
       
       // Enviar notificação de atualização
       await this.sendStatusUpdateNotification(updatedOrder);
 
       return updatedOrder;
     } catch (error) {
-      console.error('❌ Erro ao atualizar status:', error);
-      throw error;
+      console.error('❌ Erro ao atualizar no Firebase, usando fallback localStorage:', error);
+      return this.updateOrderStatusFallback(orderId, status);
     }
+  }
+
+  // Fallback para atualizar status no localStorage
+  private updateOrderStatusFallback(orderId: string, status: OrderStatus): Order {
+    const orders = this.getAllOrdersFallback();
+    const orderIndex = orders.findIndex(order => order.id === orderId);
+    
+    if (orderIndex === -1) {
+      throw new Error('Pedido não encontrado');
+    }
+
+    orders[orderIndex].status = status;
+    orders[orderIndex].updatedAt = new Date();
+
+    localStorage.setItem(this.FALLBACK_KEY, JSON.stringify(orders));
+    console.log('✅ Status atualizado no localStorage com sucesso!');
+
+    return orders[orderIndex];
   }
 
   // Buscar pedidos por status
@@ -162,8 +239,9 @@ class OrderService {
       
       return orders;
     } catch (error) {
-      console.error('❌ Erro ao buscar pedidos por status:', error);
-      return [];
+      console.error('❌ Erro ao buscar pedidos por status no Firebase:', error);
+      const allOrders = this.getAllOrdersFallback();
+      return allOrders.filter(order => order.status === status);
     }
   }
 
@@ -192,8 +270,10 @@ class OrderService {
       
       return orders;
     } catch (error) {
-      console.error('❌ Erro ao buscar pedidos recentes:', error);
-      return [];
+      console.error('❌ Erro ao buscar pedidos recentes no Firebase:', error);
+      const allOrders = this.getAllOrdersFallback();
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      return allOrders.filter(order => new Date(order.createdAt) > yesterday);
     }
   }
 
@@ -237,6 +317,20 @@ class OrderService {
         deliveringOrders: 0
       };
     }
+  }
+
+  // Gerar ID único para pedido (fallback)
+  private generateOrderId(): string {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substr(2, 5);
+    return `KAL-${timestamp}-${random}`.toUpperCase();
+  }
+
+  // Salvar pedido no localStorage (fallback)
+  private saveOrderFallback(order: Order) {
+    const orders = this.getAllOrdersFallback();
+    orders.push(order);
+    localStorage.setItem(this.FALLBACK_KEY, JSON.stringify(orders));
   }
 
   // Simular envio de notificação
