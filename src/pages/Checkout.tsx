@@ -14,6 +14,7 @@ import { ArrowLeft, CreditCard, ShoppingCart, Trash2, Plus, Minus, CheckCircle, 
 import { useToast } from '@/hooks/use-toast';
 import MercadoPagoButton from '@/components/MercadoPagoButton';
 import PixPayment from '@/components/PixPayment';
+import PhoneInput from '@/components/PhoneInput';
 import { CartItem } from '@/services/mercadopagoService';
 
 const Checkout = () => {
@@ -172,6 +173,11 @@ const Checkout = () => {
                 <CardDescription>
                   Informações para entrega e contato
                 </CardDescription>
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    📱 <strong>Notificações SMS:</strong> Você receberá SMS de confirmação do pedido e atualizações de status.
+                  </p>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -198,13 +204,12 @@ const Checkout = () => {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="phone">Telefone *</Label>
-                  <Input
-                    id="phone"
+                  <PhoneInput
                     value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    onChange={(value) => handleInputChange('phone', value)}
+                    label="Telefone"
                     placeholder="(11) 99999-9999"
-                    className="mt-1"
+                    required={true}
                   />
                 </div>
               </CardContent>
