@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import SMSTest from '@/components/SMSTest';
 import { 
   ArrowLeft, 
   ShoppingCart, 
@@ -34,7 +35,8 @@ import {
   TrendingUp,
   MapPin,
   Phone,
-  Mail
+  Mail,
+  MessageSquare
 } from 'lucide-react';
 
 const Admin = () => {
@@ -449,7 +451,7 @@ const Admin = () => {
 
         {/* Tabs de Pedidos */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="all">Todos ({filteredOrders.length})</TabsTrigger>
             <TabsTrigger value="pending">Pendentes ({orders.filter(o => o.status === 'pending').length})</TabsTrigger>
             <TabsTrigger value="confirmed">Confirmados ({orders.filter(o => o.status === 'confirmed').length})</TabsTrigger>
@@ -458,6 +460,10 @@ const Admin = () => {
             <TabsTrigger value="delivering">Entregando ({orders.filter(o => o.status === 'delivering').length})</TabsTrigger>
             <TabsTrigger value="delivered">Entregues ({orders.filter(o => o.status === 'delivered').length})</TabsTrigger>
             <TabsTrigger value="cancelled">Cancelados ({orders.filter(o => o.status === 'cancelled').length})</TabsTrigger>
+            <TabsTrigger value="sms-test" className="flex items-center gap-1">
+              <MessageSquare className="w-3 h-3" />
+              SMS Test
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="space-y-4">
@@ -695,6 +701,60 @@ const Admin = () => {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          {/* Aba de Teste de SMS */}
+          <TabsContent value="sms-test" className="space-y-6">
+            <Card className="shadow-warm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  Teste de Sistema de SMS
+                </CardTitle>
+                <CardDescription>
+                  Teste o envio de SMS para verificar se o sistema está funcionando corretamente
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">📱 Como Testar</h3>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-start gap-2">
+                        <span className="bg-blue-100 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">1</span>
+                        <p>Configure as credenciais do Twilio no arquivo <code className="bg-muted px-1 rounded">.env</code></p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="bg-blue-100 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">2</span>
+                        <p>Digite seu número de telefone no campo abaixo</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="bg-blue-100 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">3</span>
+                        <p>Clique em "Enviar SMS de Teste"</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="bg-blue-100 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">4</span>
+                        <p>Verifique se o SMS chegou no seu telefone</p>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <h4 className="font-medium text-yellow-800 mb-2">⚠️ Importante</h4>
+                      <ul className="text-sm text-yellow-700 space-y-1">
+                        <li>• Use seu próprio número para testar</li>
+                        <li>• O Twilio oferece $15 de crédito gratuito</li>
+                        <li>• Cada SMS custa ~$0.15 no Brasil</li>
+                        <li>• Verifique os logs no console do navegador</li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <SMSTest />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

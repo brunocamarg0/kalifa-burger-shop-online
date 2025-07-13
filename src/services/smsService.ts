@@ -1,39 +1,58 @@
 import { Order } from '@/types/order';
 
-// Serviço de SMS para notificações de pedidos
+// Serviço de SMS para notificações de pedidos usando Twilio
 class SMSService {
-  private readonly API_URL = 'https://api.smsapi.com/sms.do'; // Exemplo de API
-  private readonly API_TOKEN = process.env.VITE_SMS_API_TOKEN || 'demo_token';
+  private readonly TWILIO_ACCOUNT_SID = import.meta.env.VITE_TWILIO_ACCOUNT_SID;
+  private readonly TWILIO_AUTH_TOKEN = import.meta.env.VITE_TWILIO_AUTH_TOKEN;
+  private readonly TWILIO_PHONE_NUMBER = import.meta.env.VITE_TWILIO_PHONE_NUMBER;
+  
+  // Verificar se o Twilio está configurado
+  private isTwilioConfigured(): boolean {
+    return !!(this.TWILIO_ACCOUNT_SID && this.TWILIO_AUTH_TOKEN && this.TWILIO_PHONE_NUMBER);
+  }
 
   // Enviar SMS de confirmação de pedido
   async sendOrderConfirmation(order: Order): Promise<boolean> {
     try {
       const message = this.formatOrderConfirmationMessage(order);
       
-      // Para demonstração, vamos simular o envio
       console.log('📱 Enviando SMS de confirmação...');
       console.log('📞 Para:', order.customer.phone);
       console.log('💬 Mensagem:', message);
       
-      // Em produção, você usaria uma API real de SMS
-      // const response = await fetch(this.API_URL, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${this.API_TOKEN}`
-      //   },
-      //   body: JSON.stringify({
-      //     to: order.customer.phone,
-      //     message: message,
-      //     from: 'KalifaBurger'
-      //   })
-      // });
+      // Verificar se o Twilio está configurado
+      if (!this.isTwilioConfigured()) {
+        console.log('⚠️ Twilio não configurado, simulando envio...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('✅ SMS simulado enviado com sucesso!');
+        return true;
+      }
       
-      // Simular delay de envio
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Enviar SMS real via Twilio
+      const response = await fetch('/api/send-sms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: order.customer.phone,
+          message: message,
+          type: 'confirmation'
+        })
+      });
       
-      console.log('✅ SMS enviado com sucesso!');
-      return true;
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ SMS real enviado com sucesso! SID:', result.sid);
+        return true;
+      } else {
+        throw new Error(result.error || 'Erro desconhecido');
+      }
     } catch (error) {
       console.error('❌ Erro ao enviar SMS:', error);
       return false;
@@ -49,11 +68,39 @@ class SMSService {
       console.log('📞 Para:', order.customer.phone);
       console.log('💬 Mensagem:', message);
       
-      // Simular delay de envio
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verificar se o Twilio está configurado
+      if (!this.isTwilioConfigured()) {
+        console.log('⚠️ Twilio não configurado, simulando envio...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('✅ SMS de status simulado enviado com sucesso!');
+        return true;
+      }
       
-      console.log('✅ SMS de status enviado com sucesso!');
-      return true;
+      // Enviar SMS real via Twilio
+      const response = await fetch('/api/send-sms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: order.customer.phone,
+          message: message,
+          type: 'status_update'
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ SMS de status real enviado com sucesso! SID:', result.sid);
+        return true;
+      } else {
+        throw new Error(result.error || 'Erro desconhecido');
+      }
     } catch (error) {
       console.error('❌ Erro ao enviar SMS de status:', error);
       return false;
