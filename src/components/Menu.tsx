@@ -26,7 +26,7 @@ const menuItems: MenuItem[] = [
     id: 1,
     name: "Kalifa Classic",
     description: "Hambúrguer artesanal 180g, queijo cheddar, alface, tomate, cebola e molho especial",
-    price: 24.90,
+    price: 1, // Preço alterado para R$ 1,00 para teste
     image: classicBurger,
     category: "classics",
     popular: true,
