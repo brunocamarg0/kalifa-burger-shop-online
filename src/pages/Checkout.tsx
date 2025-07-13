@@ -375,6 +375,17 @@ const Checkout = () => {
                         amount={finalTotal}
                         orderId={`ORDER-${Date.now()}`}
                         customerName={formData.name}
+                        customerData={{
+                          name: formData.name,
+                          email: formData.email,
+                          phone: formData.phone,
+                          address: formData.address,
+                          city: formData.city,
+                          zipCode: formData.zipCode,
+                          neighborhood: formData.neighborhood,
+                          complement: formData.complement,
+                          notes: formData.notes
+                        }}
                         onPaymentSuccess={() => {
                           toast({
                             title: "PIX processado! 🎉",

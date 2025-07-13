@@ -3,31 +3,92 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Loader2, Copy, QrCode, CheckCircle } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
+import { orderService } from '../services/orderService';
+import { useCart } from '../contexts/CartContext';
 
 interface PixPaymentProps {
   amount: number;
   orderId: string;
   customerName: string;
+  customerData?: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    zipCode: string;
+    neighborhood: string;
+    complement: string;
+    notes: string;
+  };
   onPaymentSuccess?: () => void;
   onPaymentError?: (error: string) => void;
 }
 
-const PixPayment = ({ amount, orderId, customerName, onPaymentSuccess, onPaymentError }: PixPaymentProps) => {
+const PixPayment = ({ 
+  amount, 
+  orderId, 
+  customerName, 
+  customerData,
+  onPaymentSuccess, 
+  onPaymentError 
+}: PixPaymentProps) => {
   const [loading, setLoading] = useState(false);
   const [pixCode, setPixCode] = useState('');
   const [copied, setCopied] = useState(false);
+  const [orderCreated, setOrderCreated] = useState(false);
   const { toast } = useToast();
+  const { state } = useCart();
 
   const generatePix = async () => {
     setLoading(true);
     try {
+      console.log('💳 Gerando PIX e criando pedido...');
+      
+      // Criar o pedido no banco de dados
+      if (customerData && state.items.length > 0) {
+        console.log('📝 Criando pedido no banco de dados...');
+        
+        const order = await orderService.createOrder(
+          state.items,
+          {
+            name: customerData.name,
+            email: customerData.email,
+            phone: customerData.phone,
+            address: customerData.address,
+            city: customerData.city,
+            zipCode: customerData.zipCode,
+            neighborhood: customerData.neighborhood,
+            complement: customerData.complement
+          },
+          {
+            method: 'pix',
+            cardNumber: '',
+            cardExpiry: '',
+            cardCvv: '',
+            cardName: ''
+          },
+          customerData.notes
+        );
+        
+        console.log('✅ Pedido criado com sucesso! ID:', order.id);
+        setOrderCreated(true);
+        
+        // Salvar dados do cliente no localStorage
+        localStorage.setItem('customerData', JSON.stringify(customerData));
+        localStorage.setItem('orderId', order.id);
+      }
+      
+      // Simular geração do PIX
       await new Promise(resolve => setTimeout(resolve, 2000));
       setPixCode('00020126580014br.gov.bcb.pix0136123e4567-e12b-12d1-a456-426614174000520400005303986540510.005802BR5913Kalifa Burger6009Sao Paulo62070503***6304E2CA');
+      
       toast({
         title: "PIX gerado com sucesso!",
         description: "Copie o código PIX para pagar.",
       });
     } catch (error) {
+      console.error('❌ Erro ao gerar PIX:', error);
       toast({
         title: "Erro ao gerar PIX",
         description: "Tente novamente.",
@@ -57,10 +118,10 @@ const PixPayment = ({ amount, orderId, customerName, onPaymentSuccess, onPayment
   };
 
   useEffect(() => {
-    if (amount > 0) {
+    if (amount > 0 && !orderCreated) {
       generatePix();
     }
-  }, [amount]);
+  }, [amount, orderCreated]);
 
   if (loading) {
     return (
@@ -68,7 +129,7 @@ const PixPayment = ({ amount, orderId, customerName, onPaymentSuccess, onPayment
         <CardContent className="p-6">
           <div className="flex items-center justify-center space-x-2">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Gerando PIX...</span>
+            <span>Gerando PIX e criando pedido...</span>
           </div>
         </CardContent>
       </Card>
@@ -120,6 +181,12 @@ const PixPayment = ({ amount, orderId, customerName, onPaymentSuccess, onPayment
             <span>Pedido:</span>
             <span className="font-medium">{orderId}</span>
           </div>
+          {orderCreated && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Status:</span>
+              <span className="font-medium">Pedido criado ✓</span>
+            </div>
+          )}
         </div>
 
         <div className="text-xs text-muted-foreground space-y-1">
