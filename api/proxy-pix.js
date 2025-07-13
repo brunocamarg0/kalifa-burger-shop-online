@@ -30,11 +30,14 @@ export default async function handler(req, res) {
       external_reference: orderId
     };
 
+    const idempotencyKey = orderId || `${Date.now()}-${Math.random()}`;
+
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': idempotencyKey
       },
       body: JSON.stringify(paymentData)
     });
