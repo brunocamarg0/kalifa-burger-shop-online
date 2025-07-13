@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Loader2, Copy, QrCode, CheckCircle, AlertCircle } from 'lucide-react';
@@ -30,6 +30,7 @@ const PixPayment = ({
   const [orderCreated, setOrderCreated] = useState(false);
   const { toast } = useToast();
   const { state } = useCart();
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const generatePix = async () => {
     if (!customerData) {
@@ -128,11 +129,39 @@ const PixPayment = ({
     }
   };
 
+  // Função para checar status do pedido
+  const checkOrderStatus = async (orderId: string) => {
+    try {
+      const order = await orderService.getOrderById(orderId);
+      if (order && order.status === 'confirmed') {
+        toast({
+          title: 'Pagamento realizado com sucesso! 🎉',
+          description: 'Seu pagamento PIX foi aprovado.',
+        });
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        onPaymentSuccess?.();
+      }
+    } catch (error) {
+      // Ignorar erros de polling
+    }
+  };
+
   useEffect(() => {
     if (amount > 0 && !orderCreated && customerData) {
       generatePix();
     }
   }, [amount, orderCreated, customerData]);
+
+  useEffect(() => {
+    if (pixData && pixData.success && orderId) {
+      pollingRef.current = setInterval(() => {
+        checkOrderStatus(orderId);
+      }, 5000);
+      return () => {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+      };
+    }
+  }, [pixData, orderId]);
 
   // Verificar se o Mercado Pago está configurado
   const isConfigured = import.meta.env.VITE_MERCADOPAGO_ACCESS_TOKEN;
