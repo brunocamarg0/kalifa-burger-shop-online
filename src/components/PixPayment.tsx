@@ -131,22 +131,7 @@ const PixPayment = ({
     }
   };
 
-  // Função para checar status do pedido
-  const checkOrderStatus = async (orderId: string) => {
-    try {
-      const order = await orderService.getOrderById(orderId);
-      if (order && order.status === 'confirmed') {
-        toast({
-          title: 'Pagamento realizado com sucesso! 🎉',
-          description: 'Seu pagamento PIX foi aprovado.',
-        });
-        if (pollingRef.current) clearInterval(pollingRef.current);
-        onPaymentSuccess?.();
-      }
-    } catch (error) {
-      // Ignorar erros de polling
-    }
-  };
+  // Remover o listener de status do pedido em tempo real
 
   useEffect(() => {
     if (amount > 0 && !orderCreated && customerData) {
@@ -154,20 +139,7 @@ const PixPayment = ({
     }
   }, [amount, orderCreated, customerData]);
 
-  useEffect(() => {
-    if (realOrderId) {
-      const unsubscribe = orderService.onOrderStatusChange(realOrderId, (order) => {
-        if (order && order.status === 'confirmed') {
-          toast({
-            title: 'Pagamento realizado com sucesso! 🎉',
-            description: 'Seu pagamento PIX foi aprovado.',
-          });
-          onPaymentSuccess?.();
-        }
-      });
-      return () => unsubscribe();
-    }
-  }, [realOrderId]);
+  // Remover o useEffect que chama orderService.onOrderStatusChange
 
   // Verificar se o Mercado Pago está configurado
   const isConfigured = import.meta.env.VITE_MERCADOPAGO_ACCESS_TOKEN;
