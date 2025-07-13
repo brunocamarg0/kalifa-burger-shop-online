@@ -117,7 +117,7 @@ class MercadoPagoService {
             neighborhood: customerData.neighborhood
           }
         },
-        back_urls,
+        back_urls: backUrls, // Corrigido aqui!
         auto_return: 'approved',
         external_reference: orderId,
         notification_url: `${baseUrl}/api/payment-webhook`,
