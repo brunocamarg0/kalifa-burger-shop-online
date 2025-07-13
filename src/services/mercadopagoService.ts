@@ -80,18 +80,18 @@ class MercadoPagoService {
 
       // Calcular total
       const total = items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
-      const deliveryFee = 5.00;
-      const finalTotal = total + deliveryFee;
+      // const deliveryFee = 5.00;
+      // const finalTotal = total + deliveryFee;
 
-      // Adicionar taxa de entrega como item
-      mpItems.push({
-        id: 'delivery_fee',
-        title: 'Taxa de Entrega',
-        quantity: 1,
-        unit_price: deliveryFee,
-        currency_id: 'BRL',
-        description: 'Taxa de entrega'
-      });
+      // NÃO adicionar taxa de entrega como item
+      // mpItems.push({
+      //   id: 'delivery_fee',
+      //   title: 'Taxa de Entrega',
+      //   quantity: 1,
+      //   unit_price: deliveryFee,
+      //   currency_id: 'BRL',
+      //   description: 'Taxa de entrega'
+      // });
 
       // URLs de retorno baseadas no ambiente
       const baseUrl = window.location.origin;
