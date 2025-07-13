@@ -21,14 +21,16 @@ export default async function handler(req, res) {
 
   try {
     const { type, data } = req.body;
-
-    console.log('📥 Webhook recebido do Mercado Pago:', { type, data });
+    const webhookReceivedAt = new Date().toISOString();
+    console.log(`[${webhookReceivedAt}] 📥 Webhook recebido do Mercado Pago:`, { type, data });
 
     // Verificar se é um webhook de pagamento
     if (type === 'payment') {
       const paymentId = data.id;
       
       console.log('💳 Processando pagamento:', paymentId);
+      const paymentQueryAt = new Date().toISOString();
+      console.log(`[${paymentQueryAt}] 🔎 Consultando status do pagamento:`, paymentId);
 
       // Buscar detalhes do pagamento no Mercado Pago
       const mpToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
@@ -41,10 +43,11 @@ export default async function handler(req, res) {
       console.log('🔎 Status do pagamento:', status, 'OrderId:', orderId);
 
       if (status === 'approved' && orderId) {
+        const updateOrderAt = new Date().toISOString();
         // Atualizar status do pedido no Firestore
         const orderRef = db.collection('orders').doc(orderId);
         await orderRef.update({ status: 'confirmed' });
-        console.log('✅ Pedido atualizado para confirmed:', orderId);
+        console.log(`[${updateOrderAt}] ✅ Pedido atualizado para confirmed:`, orderId);
       }
 
       return res.status(200).json({
