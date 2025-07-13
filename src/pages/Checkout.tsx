@@ -14,7 +14,6 @@ import { ArrowLeft, CreditCard, ShoppingCart, Trash2, Plus, Minus, CheckCircle, 
 import { useToast } from '@/hooks/use-toast';
 import MercadoPagoButton from '@/components/MercadoPagoButton';
 import PixPayment from '@/components/PixPayment';
-import PhoneInput from '@/components/PhoneInput';
 import { CartItem } from '@/services/mercadopagoService';
 
 const Checkout = () => {
@@ -173,11 +172,7 @@ const Checkout = () => {
                 <CardDescription>
                   Informações para entrega e contato
                 </CardDescription>
-                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    📱 <strong>Notificações SMS:</strong> Você receberá SMS de confirmação do pedido e atualizações de status.
-                  </p>
-                </div>
+
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -204,12 +199,13 @@ const Checkout = () => {
                   </div>
                 </div>
                 <div>
-                  <PhoneInput
+                  <Label htmlFor="phone">Telefone *</Label>
+                  <Input
+                    id="phone"
                     value={formData.phone}
-                    onChange={(value) => handleInputChange('phone', value)}
-                    label="Telefone"
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
                     placeholder="(11) 99999-9999"
-                    required={true}
+                    className="mt-1"
                   />
                 </div>
               </CardContent>
@@ -294,10 +290,10 @@ const Checkout = () => {
                 <CardDescription>
                   Escolha como você quer pagar
                 </CardDescription>
-                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    💡 <strong>Atenção:</strong> Apenas o Mercado Pago processa pagamentos reais.<br/>
-                    Os outros métodos são apenas para demonstração.
+                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800">
+                    ✅ <strong>Pagamentos Reais:</strong> Todos os métodos processam pagamentos reais.<br/>
+                    Seu dinheiro será debitado/creditado normalmente.
                   </p>
                 </div>
               </CardHeader>
@@ -307,9 +303,9 @@ const Checkout = () => {
                     <SelectValue placeholder="Escolha o método de pagamento" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="mercadopago">💳 Mercado Pago (Pagamento Real)</SelectItem>
-                    <SelectItem value="pix">📱 PIX (Demonstração)</SelectItem>
-                    <SelectItem value="cash">💵 Dinheiro na entrega (Demonstração)</SelectItem>
+                    <SelectItem value="mercadopago">💳 Mercado Pago (Cartão, PIX, Boleto)</SelectItem>
+                    <SelectItem value="pix">📱 PIX Direto</SelectItem>
+                    <SelectItem value="cash">💵 Dinheiro na entrega</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -317,7 +313,7 @@ const Checkout = () => {
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center gap-2 text-sm text-green-800 mb-4">
                       <CreditCard className="w-4 h-4" />
-                      ✅ Pagamento Real - Mercado Pago (Cartão, PIX, Boleto)
+                      ✅ Pagamento Real - Cartão, PIX, Boleto
                     </div>
                     
                     {!formData.name || !formData.email || !formData.phone ? (
@@ -368,7 +364,11 @@ const Checkout = () => {
                   </div>
 
                 ) : paymentMethod === 'pix' ? (
-                  <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-blue-800 mb-4">
+                      <CreditCard className="w-4 h-4" />
+                      ✅ PIX Real - Pagamento instantâneo
+                    </div>
                     {!formData.name || !formData.email || !formData.phone ? (
                       <div className="text-center p-4 bg-yellow-50 rounded-lg">
                         <p className="text-sm text-yellow-800">
@@ -411,9 +411,14 @@ const Checkout = () => {
                   </div>
                 ) : paymentMethod === 'cash' ? (
                   <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-yellow-800">
+                    <div className="flex items-center gap-2 text-sm text-yellow-800 mb-4">
                       <CreditCard className="w-4 h-4" />
-                      🧪 Demonstração - Pagamento em dinheiro no momento da entrega
+                      💵 Pagamento em dinheiro no momento da entrega
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <p className="text-sm text-green-800">
+                        ✅ Pedido será processado normalmente. Pague em dinheiro quando receber.
+                      </p>
                     </div>
                   </div>
                 ) : null}

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
-import { Loader2, CreditCard, ExternalLink } from 'lucide-react';
+import { Loader2, CreditCard, ExternalLink, AlertCircle } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
-import { CartItem } from '../services/mercadopagoService';
+import { CartItem, CustomerData } from '../services/mercadopagoService';
+import { mercadopagoService } from '../services/mercadopagoService';
 import { orderService } from '../services/orderService';
 import { useCart } from '../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
@@ -11,17 +12,7 @@ interface MercadoPagoButtonProps {
   items: CartItem[];
   orderId: string;
   total: number;
-  customerData?: {
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-    city: string;
-    zipCode: string;
-    neighborhood: string;
-    complement: string;
-    notes: string;
-  };
+  customerData?: CustomerData;
   onPaymentSuccess?: (paymentId: string) => void;
   onPaymentError?: (error: string) => void;
 }
@@ -40,85 +31,124 @@ const MercadoPagoButton = ({
   const navigate = useNavigate();
 
   const realizarPagamento = async () => {
+    if (!customerData) {
+      toast({
+        title: "Dados do cliente necessários",
+        description: "Preencha todos os dados pessoais antes de continuar.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       
-      console.log('💳 Iniciando processamento do pagamento Mercado Pago...');
+      console.log('💳 Iniciando pagamento real no Mercado Pago...');
       
       // Criar o pedido no banco de dados ANTES do pagamento
-      if (customerData) {
-        console.log('📝 Criando pedido no banco de dados...');
-        
-        const order = await orderService.createOrder(
-          items.map(item => ({
-            id: item.id,
-            name: item.title,
-            price: item.unit_price,
-            quantity: item.quantity,
-            image: '', // Será preenchido pelo contexto do carrinho
-            description: item.description || ''
-          })),
-          {
-            name: customerData.name,
-            email: customerData.email,
-            phone: customerData.phone,
-            address: customerData.address,
-            city: customerData.city,
-            zipCode: customerData.zipCode,
-            neighborhood: customerData.neighborhood,
-            complement: customerData.complement
-          },
-          {
-            method: 'mercadopago',
-            cardNumber: '',
-            cardExpiry: '',
-            cardCvv: '',
-            cardName: ''
-          },
-          customerData.notes
-        );
-        
-        console.log('✅ Pedido criado com sucesso! ID:', order.id);
-        
-        // Salvar dados do cliente no localStorage antes de redirecionar
-        localStorage.setItem('customerData', JSON.stringify(customerData));
-        localStorage.setItem('orderId', order.id);
+      console.log('📝 Criando pedido no banco de dados...');
+      
+      const order = await orderService.createOrder(
+        items.map(item => ({
+          id: item.id,
+          name: item.title,
+          price: item.unit_price,
+          quantity: item.quantity,
+          image: '', // Será preenchido pelo contexto do carrinho
+          description: item.description || ''
+        })),
+        {
+          name: customerData.name,
+          email: customerData.email,
+          phone: customerData.phone,
+          address: customerData.address,
+          city: customerData.city,
+          zipCode: customerData.zipCode,
+          neighborhood: customerData.neighborhood,
+          complement: customerData.complement
+        },
+        {
+          method: 'mercadopago',
+          cardNumber: '',
+          cardExpiry: '',
+          cardCvv: '',
+          cardName: ''
+        },
+        customerData.notes
+      );
+      
+      console.log('✅ Pedido criado com sucesso! ID:', order.id);
+      
+      // Criar preferência de pagamento no Mercado Pago
+      console.log('💳 Criando preferência de pagamento...');
+      const paymentResponse = await mercadopagoService.createPaymentPreference(
+        items,
+        customerData,
+        order.id
+      );
+
+      if (!paymentResponse.success) {
+        throw new Error(paymentResponse.error || 'Erro ao criar preferência de pagamento');
       }
 
-      // Simular delay do processamento do pagamento
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Simular sucesso do pagamento (para demonstração)
-      const paymentId = `MP-${Date.now()}`;
+      console.log('✅ Preferência criada! Redirecionando para pagamento...');
       
-      toast({
-        title: "Pagamento aprovado! 🎉",
-        description: `Pedido #${orderId} processado com sucesso!`,
-      });
+      // Salvar dados do cliente no localStorage antes de redirecionar
+      localStorage.setItem('customerData', JSON.stringify(customerData));
+      localStorage.setItem('orderId', order.id);
+      localStorage.setItem('paymentId', paymentResponse.paymentId || '');
 
-      // Limpar carrinho e redirecionar
-      clearCart();
+      // Redirecionar para o checkout do Mercado Pago
+      const checkoutUrl = paymentResponse.sandboxInitPoint || paymentResponse.initPoint;
       
-      // Simular redirecionamento para página de sucesso
-      setTimeout(() => {
-        window.location.href = `/payment/success?payment_id=${paymentId}&order_id=${orderId}`;
-      }, 1500);
-
-      onPaymentSuccess?.(paymentId);
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        throw new Error('URL de checkout não disponível');
+      }
 
     } catch (erro) {
       console.error("❌ Erro ao realizar pagamento:", erro);
       
       toast({
         title: "Erro no Pagamento",
-        description: "Erro ao processar pagamento. Tente novamente.",
+        description: erro instanceof Error ? erro.message : "Erro ao processar pagamento. Tente novamente.",
         variant: "destructive",
       });
-      onPaymentError?.('Erro ao processar pagamento');
+      onPaymentError?.(erro instanceof Error ? erro.message : 'Erro desconhecido');
     } finally {
       setLoading(false);
     }
   };
+
+  // Verificar se o Mercado Pago está configurado
+  const isConfigured = import.meta.env.VITE_MERCADOPAGO_ACCESS_TOKEN;
+
+  if (!isConfigured) {
+    return (
+      <div className="w-full space-y-3">
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-yellow-800 mb-2">
+            <AlertCircle className="w-4 h-4" />
+            ⚠️ Mercado Pago não configurado
+          </div>
+          <p className="text-xs text-yellow-700">
+            Configure a variável VITE_MERCADOPAGO_ACCESS_TOKEN para ativar pagamentos reais.
+          </p>
+        </div>
+        
+        <Button 
+          onClick={realizarPagamento}
+          disabled={true}
+          className="w-full opacity-50"
+          size="lg"
+        >
+          <CreditCard className="mr-2 h-4 w-4" />
+          Pagamento Indisponível
+        </Button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -137,11 +167,13 @@ const MercadoPagoButton = ({
         size="lg"
       >
         <ExternalLink className="mr-2 h-4 w-4" />
-        Pagar com Mercado Pago (Demo)
+        Pagar com Mercado Pago
       </Button>
       
-      <div className="text-xs text-muted-foreground text-center">
-        Simulação de pagamento para demonstração
+      <div className="text-xs text-muted-foreground text-center space-y-1">
+        <p>💳 Cartão de crédito, débito, PIX e boleto</p>
+        <p>🔒 Pagamento 100% seguro</p>
+        <p>⚡ Processamento instantâneo</p>
       </div>
     </div>
   );

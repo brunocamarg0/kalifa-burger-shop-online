@@ -12,7 +12,6 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { smsService } from './smsService';
 
 // Serviço de pedidos usando Firebase Firestore com fallback para localStorage
 class OrderService {
@@ -60,8 +59,8 @@ class OrderService {
         updatedAt: new Date()
       };
 
-      // Enviar SMS de confirmação
-      await this.sendOrderConfirmationSMS(order);
+      // Notificação de pedido criado
+      console.log('✅ Pedido criado com sucesso! ID:', order.id);
 
       return order;
     } catch (error) {
@@ -188,8 +187,8 @@ class OrderService {
 
       console.log('✅ Status atualizado no Firebase com sucesso!');
       
-      // Enviar SMS de atualização de status
-      await this.sendStatusUpdateSMS(updatedOrder);
+      // Notificação de status atualizado
+      console.log('🔄 Status do pedido atualizado:', updatedOrder.id, 'para:', updatedOrder.status);
 
       return updatedOrder;
     } catch (error) {
@@ -362,51 +361,7 @@ class OrderService {
     // sobre a atualização do status do pedido
   }
 
-  // Enviar SMS de confirmação de pedido
-  private async sendOrderConfirmationSMS(order: Order) {
-    try {
-      console.log('📱 Enviando SMS de confirmação para:', order.customer.phone);
-      
-      // Validar número de telefone
-      if (!smsService.validatePhoneNumber(order.customer.phone)) {
-        console.warn('⚠️ Número de telefone inválido:', order.customer.phone);
-        return;
-      }
 
-      const success = await smsService.sendOrderConfirmation(order);
-      
-      if (success) {
-        console.log('✅ SMS de confirmação enviado com sucesso!');
-      } else {
-        console.error('❌ Falha ao enviar SMS de confirmação');
-      }
-    } catch (error) {
-      console.error('❌ Erro ao enviar SMS de confirmação:', error);
-    }
-  }
-
-  // Enviar SMS de atualização de status
-  private async sendStatusUpdateSMS(order: Order) {
-    try {
-      console.log('📱 Enviando SMS de atualização de status para:', order.customer.phone);
-      
-      // Validar número de telefone
-      if (!smsService.validatePhoneNumber(order.customer.phone)) {
-        console.warn('⚠️ Número de telefone inválido:', order.customer.phone);
-        return;
-      }
-
-      const success = await smsService.sendStatusUpdate(order);
-      
-      if (success) {
-        console.log('✅ SMS de atualização de status enviado com sucesso!');
-      } else {
-        console.error('❌ Falha ao enviar SMS de atualização de status');
-      }
-    } catch (error) {
-      console.error('❌ Erro ao enviar SMS de atualização de status:', error);
-    }
-  }
 
   // Exportar dados dos pedidos (para backup)
   async exportOrders(): Promise<string> {
