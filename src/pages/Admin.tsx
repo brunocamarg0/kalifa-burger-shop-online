@@ -35,7 +35,8 @@ import {
   TrendingUp,
   MapPin,
   Phone,
-  Mail
+  Mail,
+  TestTube
 } from 'lucide-react';
 
 const Admin = () => {
@@ -441,6 +442,14 @@ const Admin = () => {
           <Button onClick={exportOrders} variant="outline">
             <Download className="w-4 h-4 mr-2" />
             Exportar Pedidos
+          </Button>
+          <Button 
+            onClick={() => navigate('/ifood-test')} 
+            variant="outline"
+            className="bg-orange-50 text-orange-700 hover:bg-orange-100"
+          >
+            <TestTube className="w-4 h-4 mr-2" />
+            Testes iFood
           </Button>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Bell className="w-4 h-4" />

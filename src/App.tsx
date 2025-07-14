@@ -13,6 +13,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
 import PaymentPending from "./pages/PaymentPending";
+import IFoodTest from "./pages/IFoodTest";
 import WhatsAppButton from "./components/WhatsAppButton";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,11 @@ const App = () => (
             <Route path="/admin" element={
               <ProtectedRoute>
                 <Admin />
+              </ProtectedRoute>
+            } />
+            <Route path="/ifood-test" element={
+              <ProtectedRoute>
+                <IFoodTest />
               </ProtectedRoute>
             } />
             <Route path="/payment/success" element={<PaymentSuccess />} />
