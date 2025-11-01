@@ -28,7 +28,7 @@ const Header = () => {
           className="text-2xl font-bold bg-hero-gradient bg-clip-text text-transparent cursor-pointer font-display"
           onClick={() => scrollToSection('hero')}
         >
-          Kalifa Burguer
+          Hamburger Paulinia
         </div>
 
         {/* Desktop Navigation */}

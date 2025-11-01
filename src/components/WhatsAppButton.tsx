@@ -2,7 +2,7 @@ import { FaWhatsapp } from "react-icons/fa";
 
 const WhatsAppButton = () => {
   const phoneNumber = "5519989482441";
-  const message = "Olá! Gostaria de fazer um pedido no Kalifa Burger Shop.";
+  const message = "Olá! Gostaria de fazer um pedido no Hamburger Paulinia.";
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
   return (

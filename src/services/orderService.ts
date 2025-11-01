@@ -18,7 +18,7 @@ import { ifoodService, IFoodDeliveryResponse } from './ifoodService';
 // Serviço de pedidos usando Firebase Firestore com fallback para localStorage
 class OrderService {
   private readonly COLLECTION_NAME = 'orders';
-  private readonly FALLBACK_KEY = 'kalifa_orders_fallback';
+  private readonly FALLBACK_KEY = 'hamburger_paulinia_orders_fallback';
 
   // Salvar pedido
   async createOrder(

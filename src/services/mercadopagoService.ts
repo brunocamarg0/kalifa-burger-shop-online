@@ -121,7 +121,7 @@ class MercadoPagoService {
         auto_return: 'approved',
         external_reference: orderId,
         notification_url: `${baseUrl}/api/payment-webhook`,
-        statement_descriptor: 'KALIFA BURGER',
+        statement_descriptor: 'HAMBURGER PAULINIA',
         expires: true,
         expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos
         payment_methods: {

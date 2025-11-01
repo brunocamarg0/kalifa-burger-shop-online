@@ -259,7 +259,7 @@ const Admin = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `pedidos-kalifa-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `pedidos-hamburger-paulinia-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };

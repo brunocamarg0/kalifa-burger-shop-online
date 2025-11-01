@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
-// Configuração do Firebase para Kalifa Burger Shop
+// Configuração do Firebase para Hamburger Paulinia
 const firebaseConfig = {
   apiKey: "AIzaSyAFBmMLgNnosvsHyCprMAv341jrAbluSkk",
   authDomain: "kalifa-burger-shop.firebaseapp.com",

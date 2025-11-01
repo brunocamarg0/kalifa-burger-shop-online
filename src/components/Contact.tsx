@@ -21,8 +21,8 @@ const Contact = () => {
     {
       icon: Instagram,
       title: "Instagram",
-      info: "@kalifaburgueroficial",
-      action: () => window.open('https://instagram.com/kalifaburgueroficial', '_blank'),
+      info: "@hamburgerpaulinia",
+      action: () => window.open('https://instagram.com/hamburgerpaulinia', '_blank'),
       description: "Siga-nos no Instagram"
     },
     {

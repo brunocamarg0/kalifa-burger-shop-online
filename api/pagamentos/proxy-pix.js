@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
     const paymentData = {
       transaction_amount: amount,
-      description: `Pedido #${orderId} - Kalifa Burger`,
+      description: `Pedido #${orderId} - Hamburger Paulinia`,
       payment_method_id: 'pix',
       payer: {
         email: customerData.email,

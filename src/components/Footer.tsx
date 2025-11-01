@@ -17,7 +17,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <div className="text-2xl font-bold bg-hero-gradient bg-clip-text text-transparent font-display">
-              Kalifa Burguer
+              Hamburger Paulinia
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Os melhores hambúrgueres artesanais da cidade, feitos com ingredientes premium e muito amor.
@@ -82,12 +82,12 @@ const Footer = () => {
               <li className="flex items-center">
                 <Instagram className="w-4 h-4 mr-3 text-primary" />
                 <a 
-                  href="https://instagram.com/kalifaburgueroficial" 
+                  href="https://instagram.com/hamburgerpaulinia" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  @kalifaburgueroficial
+                  @hamburgerpaulinia
                 </a>
               </li>
             </ul>
@@ -121,7 +121,7 @@ const Footer = () => {
         <div className="border-t border-border mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-sm text-muted-foreground">
-              © {currentYear} Kalifa Burguer. Todos os direitos reservados.
+              © {currentYear} Hamburger Paulinia. Todos os direitos reservados.
             </p>
             <div className="flex items-center space-x-4 text-sm text-muted-foreground">
               <span>Desenvolvido com</span>

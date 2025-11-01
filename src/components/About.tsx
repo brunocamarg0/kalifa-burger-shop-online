@@ -20,7 +20,7 @@ const About = () => {
     },
     {
       icon: Users,
-      title: "Família Kalifa",
+      title: "Família Paulinia",
       description: "Mais de 1000 clientes satisfeitos fazem parte da nossa família gastronômica."
     }
   ];
@@ -37,7 +37,7 @@ const About = () => {
                 <span className="bg-hero-gradient bg-clip-text text-transparent"> História</span>
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                A Kalifa Burguer nasceu da paixão por criar os melhores hambúrgueres artesanais da cidade. 
+                A Hamburger Paulinia nasceu da paixão por criar os melhores hambúrgueres artesanais da cidade. 
                 Com receitas exclusivas e ingredientes selecionados, transformamos cada refeição em uma 
                 experiência única e memorável.
               </p>
@@ -99,7 +99,7 @@ const About = () => {
           </h3>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
             Nossa equipe está sempre pronta para recebê-lo com um sorriso e preparar 
-            o hambúrguer perfeito para o seu dia. Venha nos visitar e fazer parte da família Kalifa!
+            o hambúrguer perfeito para o seu dia. Venha nos visitar e fazer parte da família Paulinia!
           </p>
           <div className="flex justify-center items-center space-x-2 text-sm text-muted-foreground">
             <span>👨‍🍳</span>

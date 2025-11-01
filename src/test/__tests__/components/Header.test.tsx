@@ -15,7 +15,7 @@ describe('Header Component', () => {
   it('should render the logo and navigation', () => {
     renderWithRouter(<Header />)
     
-    expect(screen.getByText(/kalifa/i)).toBeInTheDocument()
+    expect(screen.getByText(/hamburger paulinia/i)).toBeInTheDocument()
     expect(screen.getByRole('navigation')).toBeInTheDocument()
   })
 
