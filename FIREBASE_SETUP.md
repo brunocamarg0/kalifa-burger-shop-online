@@ -29,7 +29,19 @@ O Firebase resolve o problema de **localStorage** que é específico por navegad
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Permitir acesso total à coleção de pedidos
     match /orders/{document} {
+      allow read, write: if true;
+    }
+    
+    // Permitir acesso à coleção de produtos do menu
+    match /menuItems/{document} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+    
+    // Permitir acesso a outras coleções se necessário
+    match /{document=**} {
       allow read, write: if true;
     }
   }

@@ -14,6 +14,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { DeliveryManager } from '@/components/DeliveryManager';
+import EditOrderItemCustomization from '@/components/EditOrderItemCustomization';
+import { OrderItem } from '@/types/order';
+import { MEAT_DONENESS_OPTIONS } from '@/types/burger';
 import { 
   ArrowLeft, 
   ShoppingCart, 
@@ -76,6 +79,14 @@ const Admin = () => {
     popular: false,
     spicy: false,
   });
+  
+  // Estados para edição de itens do pedido
+  const [editingOrderItem, setEditingOrderItem] = useState<{
+    orderId: string;
+    itemIndex: number;
+    item: OrderItem;
+    basePrice: number;
+  } | null>(null);
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
@@ -333,6 +344,34 @@ const Admin = () => {
       toast({
         title: "Erro ao deletar produto",
         description: "Tente novamente",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveOrderItem = async (updatedItem: OrderItem, newPrice: number) => {
+    if (!editingOrderItem) return;
+
+    try {
+      await orderService.updateOrderItem(
+        editingOrderItem.orderId,
+        editingOrderItem.itemIndex,
+        updatedItem
+      );
+      
+      await loadOrders();
+      await loadStats();
+      setEditingOrderItem(null);
+      
+      toast({
+        title: "Item atualizado!",
+        description: "As customizações do item foram atualizadas com sucesso",
+      });
+    } catch (error: any) {
+      console.error('Erro ao atualizar item:', error);
+      toast({
+        title: "Erro ao atualizar item",
+        description: error.message || "Tente novamente",
         variant: "destructive"
       });
     }
@@ -716,13 +755,91 @@ const Admin = () => {
 
                             <div className="mb-4">
                               <h4 className="font-medium mb-2">Itens ({order.items.length})</h4>
-                              <div className="space-y-1">
-                                {order.items.map((item, index) => (
-                                  <div key={index} className="flex justify-between text-sm">
-                                    <span>{item.quantity}x {item.name}</span>
-                                    <span>{formatCurrency(item.price * item.quantity)}</span>
-                                  </div>
-                                ))}
+                              <div className="space-y-2">
+                                {order.items.map((item, index) => {
+                                  // Calcular preço base (sem customizações)
+                                  const basePrice = item.customization 
+                                    ? item.price - 
+                                      (item.customization.addons.reduce((sum, a) => sum + a.price, 0) +
+                                       item.customization.extraSauces.reduce((sum, s) => sum + s.price, 0))
+                                    : item.price;
+                                  
+                                  return (
+                                    <div key={index} className="p-2 bg-muted/30 rounded-lg">
+                                      <div className="flex justify-between items-start mb-1">
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-medium text-sm">
+                                              {item.quantity}x {item.name}
+                                            </span>
+                                            {item.customization && (
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => setEditingOrderItem({
+                                                  orderId: order.id,
+                                                  itemIndex: index,
+                                                  item,
+                                                  basePrice
+                                                })}
+                                                className="h-6 text-xs"
+                                              >
+                                                <Edit className="w-3 h-3 mr-1" />
+                                                Editar
+                                              </Button>
+                                            )}
+                                          </div>
+                                          
+                                          {/* Mostrar customizações */}
+                                          {item.customization && (
+                                            <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                                              {item.customization.meatDoneness && (
+                                                <div>
+                                                  <strong>Ponto:</strong> {
+                                                    MEAT_DONENESS_OPTIONS.find(o => o.value === item.customization?.meatDoneness)?.label
+                                                  }
+                                                </div>
+                                              )}
+                                              {item.customization.addons.length > 0 && (
+                                                <div>
+                                                  <strong>Extras:</strong> {item.customization.addons.map(a => a.name).join(', ')}
+                                                  {item.customization.addons.reduce((sum, a) => sum + a.price, 0) > 0 && (
+                                                    <span className="ml-1">
+                                                      (+R$ {item.customization.addons.reduce((sum, a) => sum + a.price, 0).toFixed(2)})
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              )}
+                                              {item.customization.extraSauces.length > 0 && (
+                                                <div>
+                                                  <strong>Molhos:</strong> {item.customization.extraSauces.map(s => s.name).join(', ')}
+                                                  {item.customization.extraSauces.reduce((sum, s) => sum + s.price, 0) > 0 && (
+                                                    <span className="ml-1">
+                                                      (+R$ {item.customization.extraSauces.reduce((sum, s) => sum + s.price, 0).toFixed(2)})
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              )}
+                                              {item.customization.sachets.length > 0 && (
+                                                <div>
+                                                  <strong>Saches:</strong> {item.customization.sachets.map(s => s.name).join(', ')}
+                                                </div>
+                                              )}
+                                              {item.customization.observations && (
+                                                <div className="italic">
+                                                  <strong>Obs:</strong> {item.customization.observations}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <span className="font-medium text-sm">
+                                          {formatCurrency(item.price * item.quantity)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
                               <Separator className="my-2" />
                               <div className="flex justify-between font-medium">
@@ -1246,6 +1363,16 @@ const Admin = () => {
 
         </Tabs>
       </div>
+
+      {/* Dialog de edição de item do pedido */}
+      {editingOrderItem && (
+        <EditOrderItemCustomization
+          item={editingOrderItem.item}
+          basePrice={editingOrderItem.basePrice}
+          onSave={handleSaveOrderItem}
+          onCancel={() => setEditingOrderItem(null)}
+        />
+      )}
     </div>
   );
 };

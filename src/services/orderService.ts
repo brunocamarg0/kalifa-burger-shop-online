@@ -198,6 +198,48 @@ class OrderService {
     }
   }
 
+  // Atualizar item do pedido (customizações, preço, etc)
+  async updateOrderItem(orderId: string, itemIndex: number, updatedItem: OrderItem): Promise<Order> {
+    try {
+      console.log('🔄 Atualizando item do pedido:', orderId, 'item:', itemIndex);
+      
+      const order = await this.getOrderById(orderId);
+      if (!order) {
+        throw new Error('Pedido não encontrado');
+      }
+
+      // Atualizar o item na lista
+      const updatedItems = [...order.items];
+      updatedItems[itemIndex] = updatedItem;
+
+      // Recalcular totais
+      const newTotal = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const newFinalTotal = newTotal + order.deliveryFee;
+
+      // Atualizar no Firebase
+      const orderRef = doc(db, this.COLLECTION_NAME, orderId);
+      await updateDoc(orderRef, {
+        items: updatedItems,
+        total: newTotal,
+        finalTotal: newFinalTotal,
+        updatedAt: serverTimestamp()
+      });
+
+      console.log('✅ Item do pedido atualizado com sucesso!');
+
+      // Buscar o pedido atualizado
+      const updatedOrder = await this.getOrderById(orderId);
+      if (!updatedOrder) {
+        throw new Error('Pedido não encontrado após atualização');
+      }
+
+      return updatedOrder;
+    } catch (error) {
+      console.error('❌ Erro ao atualizar item do pedido:', error);
+      throw error;
+    }
+  }
+
   // Solicitar entrega no iFood
   async requestIFoodDelivery(orderId: string): Promise<Order> {
     try {
