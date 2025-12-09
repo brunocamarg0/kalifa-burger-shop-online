@@ -226,34 +226,67 @@ class MenuService {
   // Atualizar preço de um produto
   async updateProductPrice(productId: number, newPrice: number): Promise<void> {
     try {
+      console.log('🔄 Tentando atualizar preço do produto:', productId, 'para:', newPrice);
+      
       const menuRef = collection(db, this.COLLECTION_NAME);
-      const querySnapshot = await getDocs(menuRef);
+      const q = query(menuRef, orderBy('id', 'asc'));
+      const querySnapshot = await getDocs(q);
+      
+      console.log('📦 Total de produtos encontrados:', querySnapshot.size);
       
       let productDoc: any = null;
-      querySnapshot.forEach((doc) => {
-        if (doc.data().id === productId) {
-          productDoc = doc;
+      querySnapshot.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+        console.log('🔍 Verificando produto:', data.id, '==', productId, '?', data.id === productId);
+        if (data.id === productId) {
+          productDoc = { id: docSnapshot.id, data: data };
+          console.log('✅ Produto encontrado! Document ID:', docSnapshot.id);
         }
       });
 
-      if (productDoc) {
-        await updateDoc(doc(db, this.COLLECTION_NAME, productDoc.id), {
-          price: newPrice,
-          updatedAt: serverTimestamp(),
-        });
+      if (!productDoc) {
+        console.error('❌ Produto não encontrado no Firebase. ID:', productId);
+        console.log('📋 Produtos disponíveis:', querySnapshot.docs.map(d => ({ id: d.data().id, name: d.data().name })));
+        
+        // Tentar inicializar produtos se não existirem
+        if (querySnapshot.empty) {
+          console.log('📝 Nenhum produto encontrado. Inicializando produtos padrão...');
+          await this.initializeMenuItems();
+          // Tentar novamente após inicializar
+          return this.updateProductPrice(productId, newPrice);
+        }
+        
+        throw new Error(`Produto com ID ${productId} não encontrado no Firebase`);
+      }
 
-        // Atualizar fallback no localStorage
+      console.log('💾 Atualizando documento:', productDoc.id);
+      const productDocRef = doc(db, this.COLLECTION_NAME, productDoc.id);
+      await updateDoc(productDocRef, {
+        price: newPrice,
+        updatedAt: serverTimestamp(),
+      });
+
+      console.log('✅ Preço atualizado com sucesso no Firebase!');
+
+      // Atualizar fallback no localStorage
+      try {
         const items = await this.getMenuItems();
         const updatedItems = items.map(item => 
           item.id === productId ? { ...item, price: newPrice } : item
         );
         localStorage.setItem(this.FALLBACK_KEY, JSON.stringify(updatedItems));
-      } else {
-        throw new Error('Produto não encontrado');
+        console.log('✅ Fallback atualizado no localStorage');
+      } catch (localError) {
+        console.warn('⚠️ Erro ao atualizar localStorage (não crítico):', localError);
       }
-    } catch (error) {
-      console.error('Erro ao atualizar preço:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('❌ Erro ao atualizar preço:', error);
+      console.error('Detalhes do erro:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      throw new Error(`Erro ao atualizar preço: ${error.message || 'Erro desconhecido'}`);
     }
   }
 

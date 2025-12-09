@@ -205,11 +205,19 @@ const Admin = () => {
     try {
       const items = await menuService.getMenuItems();
       setMenuItems(items);
+      
+      // Se não houver produtos, tentar inicializar
+      if (items.length === 0) {
+        toast({
+          title: "Inicializando produtos",
+          description: "Os produtos padrão estão sendo criados no Firebase...",
+        });
+      }
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);
       toast({
         title: "Erro ao carregar produtos",
-        description: "Não foi possível carregar os produtos do menu",
+        description: "Não foi possível carregar os produtos do menu. Verifique a conexão com o Firebase.",
         variant: "destructive"
       });
     } finally {
@@ -235,6 +243,7 @@ const Admin = () => {
     }
 
     try {
+      setIsLoadingProducts(true);
       await menuService.updateProductPrice(productId, price);
       await loadMenuItems();
       setEditingProduct(null);
@@ -242,14 +251,17 @@ const Admin = () => {
       
       toast({
         title: "Preço atualizado!",
-        description: "O preço foi atualizado com sucesso",
+        description: "O preço foi atualizado com sucesso e já está visível no site",
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erro ao salvar preço:', error);
       toast({
         title: "Erro ao atualizar preço",
-        description: "Tente novamente",
+        description: error.message || "Tente novamente. Se o problema persistir, verifique a conexão com o Firebase.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoadingProducts(false);
     }
   };
 
