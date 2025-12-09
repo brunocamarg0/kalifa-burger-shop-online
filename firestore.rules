@@ -6,6 +6,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
     
+    // Permitir acesso à coleção de produtos do menu
+    match /menuItems/{document} {
+      allow read, write: if true;
+    }
+    
     // Permitir acesso a outras coleções se necessário
     match /{document=**} {
       allow read, write: if true;

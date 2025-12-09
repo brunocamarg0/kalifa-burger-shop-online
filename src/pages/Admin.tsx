@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { orderService } from '@/services/orderService';
+import { menuService, MenuItem } from '@/services/menuService';
 import { Order, OrderStatus } from '@/types/order';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +37,10 @@ import {
   MapPin,
   Phone,
   Mail,
-  TestTube
+  TestTube,
+  Edit,
+  Save,
+  UtensilsCrossed
 } from 'lucide-react';
 
 const Admin = () => {
@@ -55,6 +59,12 @@ const Admin = () => {
   const [lastOrderCount, setLastOrderCount] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const intervalRef = useRef<NodeJS.Timeout>();
+  
+  // Estados para gerenciamento de produtos
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [editingProduct, setEditingProduct] = useState<number | null>(null);
+  const [editPrice, setEditPrice] = useState<string>('');
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
@@ -65,6 +75,7 @@ const Admin = () => {
   useEffect(() => {
     loadOrders();
     loadStats();
+    loadMenuItems();
     
     // Configurar atualização automática a cada 30 segundos
     if (autoRefresh) {
@@ -176,6 +187,74 @@ const Admin = () => {
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
     }
+  };
+
+  const loadMenuItems = async () => {
+    setIsLoadingProducts(true);
+    try {
+      const items = await menuService.getMenuItems();
+      setMenuItems(items);
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+      toast({
+        title: "Erro ao carregar produtos",
+        description: "Não foi possível carregar os produtos do menu",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
+
+  const handleEditPrice = (product: MenuItem) => {
+    setEditingProduct(product.id);
+    setEditPrice(product.price.toString());
+  };
+
+  const handleSavePrice = async (productId: number) => {
+    const price = parseFloat(editPrice.replace(',', '.'));
+    
+    if (isNaN(price) || price < 0) {
+      toast({
+        title: "Preço inválido",
+        description: "Digite um preço válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await menuService.updateProductPrice(productId, price);
+      await loadMenuItems();
+      setEditingProduct(null);
+      setEditPrice('');
+      
+      toast({
+        title: "Preço atualizado!",
+        description: "O preço foi atualizado com sucesso",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao atualizar preço",
+        description: "Tente novamente",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProduct(null);
+    setEditPrice('');
+  };
+
+  const getCategoryLabel = (category: string) => {
+    const labels: Record<string, string> = {
+      classics: 'Clássicos',
+      premium: 'Premium',
+      specials: 'Especiais',
+      veggie: 'Vegetarianos'
+    };
+    return labels[category] || category;
   };
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
@@ -457,9 +536,9 @@ const Admin = () => {
           </div>
         </div>
 
-        {/* Tabs de Pedidos */}
+        {/* Tabs de Pedidos e Produtos */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9">
+          <TabsList className="grid w-full grid-cols-10">
             <TabsTrigger value="all">Todos ({filteredOrders.length})</TabsTrigger>
             <TabsTrigger value="pending">Pendentes ({orders.filter(o => o.status === 'pending').length})</TabsTrigger>
             <TabsTrigger value="confirmed">Confirmados ({orders.filter(o => o.status === 'confirmed').length})</TabsTrigger>
@@ -469,6 +548,10 @@ const Admin = () => {
             <TabsTrigger value="delivered">Entregues ({orders.filter(o => o.status === 'delivered').length})</TabsTrigger>
             <TabsTrigger value="cancelled">Cancelados ({orders.filter(o => o.status === 'cancelled').length})</TabsTrigger>
             <TabsTrigger value="delivery">Entregas ({orders.filter(o => o.delivery).length})</TabsTrigger>
+            <TabsTrigger value="products">
+              <UtensilsCrossed className="w-4 h-4 mr-1" />
+              Produtos ({menuItems.length})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="space-y-4">
@@ -836,6 +919,118 @@ const Admin = () => {
                   ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* Aba de Produtos */}
+          <TabsContent value="products" className="space-y-4">
+            <Card className="shadow-warm">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <UtensilsCrossed className="w-5 h-5" />
+                      Gerenciamento de Produtos
+                    </CardTitle>
+                    <CardDescription>
+                      Gerencie os preços e informações dos produtos do cardápio
+                    </CardDescription>
+                  </div>
+                  <Button onClick={loadMenuItems} variant="outline" disabled={isLoadingProducts}>
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingProducts ? 'animate-spin' : ''}`} />
+                    Atualizar
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoadingProducts ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : menuItems.length === 0 ? (
+                  <div className="text-center py-12">
+                    <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Nenhum produto encontrado</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {menuItems.map((product) => (
+                      <Card key={product.id} className="shadow-warm hover:shadow-lg transition-shadow">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-3">
+                                <h3 className="text-lg font-semibold">{product.name}</h3>
+                                <Badge variant="outline">{getCategoryLabel(product.category)}</Badge>
+                                {product.popular && (
+                                  <Badge className="bg-primary text-primary-foreground">Popular</Badge>
+                                )}
+                                {product.spicy && (
+                                  <Badge variant="destructive">Picante</Badge>
+                                )}
+                              </div>
+                              
+                              <p className="text-sm text-muted-foreground mb-4">{product.description}</p>
+                              
+                              <div className="flex items-center gap-4">
+                                {editingProduct === product.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <Label htmlFor={`price-${product.id}`} className="font-medium">
+                                      Preço:
+                                    </Label>
+                                    <Input
+                                      id={`price-${product.id}`}
+                                      type="text"
+                                      value={editPrice}
+                                      onChange={(e) => setEditPrice(e.target.value)}
+                                      placeholder="0.00"
+                                      className="w-32"
+                                    />
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleSavePrice(product.id)}
+                                      className="flex items-center gap-1"
+                                    >
+                                      <Save className="w-4 h-4" />
+                                      Salvar
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={handleCancelEdit}
+                                    >
+                                      Cancelar
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground">Preço:</span>
+                                    <span className="text-2xl font-bold text-primary">
+                                      {formatCurrency(product.price)}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {editingProduct !== product.id && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditPrice(product)}
+                                className="flex items-center gap-2"
+                              >
+                                <Edit className="w-4 h-4" />
+                                Editar Preço
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
         </Tabs>

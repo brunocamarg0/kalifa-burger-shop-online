@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,93 +6,68 @@ import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, Star, Flame, Plus } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
+import { menuService, MenuItem } from '@/services/menuService';
 import classicBurger from '@/assets/classic-burger.jpg';
 import baconBurger from '@/assets/bacon-burger.jpg';
 import bbqBurger from '@/assets/bbq-burger.jpg';
-
-interface MenuItem {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-  popular?: boolean;
-  spicy?: boolean;
-}
-
-const menuItems: MenuItem[] = [
-  {
-    id: 1,
-    name: "Hamburger Paulinia Classic",
-    description: "Hambúrguer artesanal 180g, queijo cheddar, alface, tomate, cebola e molho especial",
-    price: 1, // Preço alterado para R$ 1,00 para teste
-    image: classicBurger,
-    category: "classics",
-    popular: true,
-  },
-  {
-    id: 2,
-    name: "Bacon Supreme",
-    description: "Hambúrguer 200g, bacon crocante, queijo cheddar duplo, cebola caramelizada",
-    price: 29.90,
-    image: baconBurger,
-    category: "premium",
-    popular: true,
-  },
-  {
-    id: 3,
-    name: "BBQ Monster",
-    description: "Hambúrguer 250g, molho barbecue artesanal, onion rings, queijo provolone",
-    price: 32.90,
-    image: bbqBurger,
-    category: "premium",
-  },
-  {
-    id: 4,
-    name: "Spicy Fire",
-    description: "Hambúrguer 180g, pimenta jalapeño, queijo pepper jack, molho picante da casa",
-    price: 27.90,
-    image: classicBurger,
-    category: "specials",
-    spicy: true,
-  },
-  {
-    id: 5,
-    name: "Veggie Deluxe",
-    description: "Hambúrguer vegano de grão-de-bico, queijo vegano, rúcula, tomate seco",
-    price: 26.90,
-    image: baconBurger,
-    category: "veggie",
-  },
-  {
-    id: 6,
-    name: "Double Trouble",
-    description: "Dois hambúrgueres 150g, queijo cheddar duplo, bacon, molho mil-ilhas",
-    price: 35.90,
-    image: bbqBurger,
-    category: "premium",
-    popular: true,
-  },
-];
-
-const categories = [
-  { id: 'all', name: 'Todos', count: menuItems.length },
-  { id: 'classics', name: 'Clássicos', count: menuItems.filter(item => item.category === 'classics').length },
-  { id: 'premium', name: 'Premium', count: menuItems.filter(item => item.category === 'premium').length },
-  { id: 'specials', name: 'Especiais', count: menuItems.filter(item => item.category === 'specials').length },
-  { id: 'veggie', name: 'Vegetarianos', count: menuItems.filter(item => item.category === 'veggie').length },
-];
 
 const Menu = () => {
   const navigate = useNavigate();
   const { addItem, state } = useCart();
   const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadMenuItems();
+  }, []);
+
+  const loadMenuItems = async () => {
+    try {
+      const items = await menuService.getMenuItems();
+      // Mapear imagens baseado no nome ou categoria
+      const itemsWithImages = items.map(item => {
+        let image = item.image;
+        // Se a imagem for placeholder, tentar mapear baseado no nome
+        if (image === '/placeholder.svg' || !image) {
+          const nameLower = item.name.toLowerCase();
+          if (nameLower.includes('classic') || nameLower.includes('spicy')) {
+            image = classicBurger;
+          } else if (nameLower.includes('bacon') || nameLower.includes('veggie')) {
+            image = baconBurger;
+          } else if (nameLower.includes('bbq') || nameLower.includes('double')) {
+            image = bbqBurger;
+          } else {
+            image = classicBurger; // fallback
+          }
+        }
+        return { ...item, image };
+      });
+      setMenuItems(itemsWithImages);
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+      toast({
+        title: "Erro ao carregar cardápio",
+        description: "Não foi possível carregar os produtos. Tente recarregar a página.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredItems = selectedCategory === 'all' 
     ? menuItems 
     : menuItems.filter(item => item.category === selectedCategory);
+
+  const categories = [
+    { id: 'all', name: 'Todos', count: menuItems.length },
+    { id: 'classics', name: 'Clássicos', count: menuItems.filter(item => item.category === 'classics').length },
+    { id: 'premium', name: 'Premium', count: menuItems.filter(item => item.category === 'premium').length },
+    { id: 'specials', name: 'Especiais', count: menuItems.filter(item => item.category === 'specials').length },
+    { id: 'veggie', name: 'Vegetarianos', count: menuItems.filter(item => item.category === 'veggie').length },
+  ];
 
   const handleAddToCart = (item: MenuItem) => {
     addItem({
@@ -114,6 +89,27 @@ const Menu = () => {
     const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
+
+  const categories = [
+    { id: 'all', name: 'Todos', count: menuItems.length },
+    { id: 'classics', name: 'Clássicos', count: menuItems.filter(item => item.category === 'classics').length },
+    { id: 'premium', name: 'Premium', count: menuItems.filter(item => item.category === 'premium').length },
+    { id: 'specials', name: 'Especiais', count: menuItems.filter(item => item.category === 'specials').length },
+    { id: 'veggie', name: 'Vegetarianos', count: menuItems.filter(item => item.category === 'veggie').length },
+  ];
+
+  if (isLoading) {
+    return (
+      <section id="cardapio" className="py-20 bg-muted/20">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Carregando cardápio...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="cardapio" className="py-20 bg-muted/20">
@@ -161,6 +157,11 @@ const Menu = () => {
         </div>
 
         {/* Menu Grid */}
+        {filteredItems.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Nenhum produto encontrado nesta categoria.</p>
+          </div>
+        ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredItems.map((item) => (
             <Card key={item.id} className="overflow-hidden hover:shadow-warm transition-all duration-300 group">
@@ -223,6 +224,7 @@ const Menu = () => {
             </Card>
           ))}
         </div>
+        )}
 
         {/* CTA Section */}
         <div className="text-center mt-16 p-8 bg-card rounded-2xl border">
