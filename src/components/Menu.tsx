@@ -23,7 +23,36 @@ const Menu = () => {
   const [customizingProduct, setCustomizingProduct] = useState<MenuItem | null>(null);
 
   useEffect(() => {
+    // Carregar produtos iniciais
     loadMenuItems();
+    
+    // Configurar listener em tempo real para atualizações automáticas
+    const unsubscribe = menuService.subscribeToMenuItems((items) => {
+      const itemsWithImages = items.map(item => {
+        let image = item.image;
+        // Se a imagem for placeholder, tentar mapear baseado no nome
+        if (image === '/placeholder.svg' || !image) {
+          const nameLower = item.name.toLowerCase();
+          if (nameLower.includes('classic') || nameLower.includes('spicy') || nameLower.includes('santa clarita') || nameLower.includes('los angeles')) {
+            image = classicBurger;
+          } else if (nameLower.includes('bacon') || nameLower.includes('veggie') || nameLower.includes('kings') || nameLower.includes('beverly')) {
+            image = baconBurger;
+          } else if (nameLower.includes('bbq') || nameLower.includes('double') || nameLower.includes('san diego') || nameLower.includes('san francisco') || nameLower.includes('califórnia')) {
+            image = bbqBurger;
+          } else {
+            image = classicBurger; // fallback
+          }
+        }
+        return { ...item, image };
+      });
+      setMenuItems(itemsWithImages);
+      setIsLoading(false);
+    });
+
+    // Limpar listener ao desmontar componente
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const loadMenuItems = async () => {
@@ -35,11 +64,11 @@ const Menu = () => {
         // Se a imagem for placeholder, tentar mapear baseado no nome
         if (image === '/placeholder.svg' || !image) {
           const nameLower = item.name.toLowerCase();
-          if (nameLower.includes('classic') || nameLower.includes('spicy')) {
+          if (nameLower.includes('classic') || nameLower.includes('spicy') || nameLower.includes('santa clarita') || nameLower.includes('los angeles')) {
             image = classicBurger;
-          } else if (nameLower.includes('bacon') || nameLower.includes('veggie')) {
+          } else if (nameLower.includes('bacon') || nameLower.includes('veggie') || nameLower.includes('kings') || nameLower.includes('beverly')) {
             image = baconBurger;
-          } else if (nameLower.includes('bbq') || nameLower.includes('double')) {
+          } else if (nameLower.includes('bbq') || nameLower.includes('double') || nameLower.includes('san diego') || nameLower.includes('san francisco') || nameLower.includes('califórnia')) {
             image = bbqBurger;
           } else {
             image = classicBurger; // fallback

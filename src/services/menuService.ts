@@ -7,7 +7,8 @@ import {
   deleteDoc,
   query,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
+  onSnapshot
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -153,6 +154,57 @@ class MenuService {
       
       // Fallback final: produtos padrão
       return defaultMenuItems;
+    }
+  }
+
+  // Escutar mudanças em tempo real nos produtos
+  subscribeToMenuItems(callback: (items: MenuItem[]) => void): () => void {
+    try {
+      const menuRef = collection(db, this.COLLECTION_NAME);
+      const q = query(menuRef, orderBy('id', 'asc'));
+      
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        if (querySnapshot.empty) {
+          callback(defaultMenuItems);
+          return;
+        }
+
+        const items: MenuItem[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          items.push({
+            id: data.id,
+            name: data.name,
+            description: data.description,
+            price: data.price,
+            image: data.image || "/placeholder.svg",
+            category: data.category || "classics",
+            popular: data.popular || false,
+            spicy: data.spicy || false,
+          });
+        });
+        
+        items.sort((a, b) => a.id - b.id);
+        
+        // Salvar no localStorage como fallback
+        localStorage.setItem(this.FALLBACK_KEY, JSON.stringify(items));
+        callback(items);
+      }, (error) => {
+        console.error('Erro ao escutar produtos:', error);
+        // Fallback para localStorage
+        const fallback = localStorage.getItem(this.FALLBACK_KEY);
+        if (fallback) {
+          callback(JSON.parse(fallback));
+        } else {
+          callback(defaultMenuItems);
+        }
+      });
+
+      return unsubscribe;
+    } catch (error) {
+      console.error('Erro ao configurar listener de produtos:', error);
+      // Retornar função vazia se houver erro
+      return () => {};
     }
   }
 
