@@ -1,3 +1,5 @@
+import { BurgerCustomization } from './burger';
+
 export interface OrderItem {
   id: number;
   name: string;
@@ -5,6 +7,7 @@ export interface OrderItem {
   quantity: number;
   image: string;
   description: string;
+  customization?: BurgerCustomization;
 }
 
 export interface CustomerInfo {

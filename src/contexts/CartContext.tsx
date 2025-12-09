@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import { BurgerCustomization } from '@/types/burger';
 
 export interface CartItem {
   id: number;
@@ -7,6 +8,7 @@ export interface CartItem {
   image: string;
   quantity: number;
   description: string;
+  customization?: BurgerCustomization;
 }
 
 interface CartState {

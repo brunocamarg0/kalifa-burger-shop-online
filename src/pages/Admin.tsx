@@ -40,7 +40,8 @@ import {
   TestTube,
   Edit,
   Save,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Plus
 } from 'lucide-react';
 
 const Admin = () => {
@@ -65,6 +66,16 @@ const Admin = () => {
   const [editingProduct, setEditingProduct] = useState<number | null>(null);
   const [editPrice, setEditPrice] = useState<string>('');
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newProduct, setNewProduct] = useState<Partial<MenuItem>>({
+    name: '',
+    description: '',
+    price: 0,
+    category: 'classics',
+    image: '/placeholder.svg',
+    popular: false,
+    spicy: false,
+  });
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
@@ -245,6 +256,74 @@ const Admin = () => {
   const handleCancelEdit = () => {
     setEditingProduct(null);
     setEditPrice('');
+  };
+
+  const handleCreateProduct = async () => {
+    if (!newProduct.name || !newProduct.description || !newProduct.price || newProduct.price <= 0) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha nome, descrição e preço válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await menuService.createProduct({
+        name: newProduct.name!,
+        description: newProduct.description!,
+        price: newProduct.price!,
+        category: newProduct.category || 'classics',
+        image: newProduct.image || '/placeholder.svg',
+        popular: newProduct.popular || false,
+        spicy: newProduct.spicy || false,
+      });
+      
+      await loadMenuItems();
+      setIsCreateDialogOpen(false);
+      setNewProduct({
+        name: '',
+        description: '',
+        price: 0,
+        category: 'classics',
+        image: '/placeholder.svg',
+        popular: false,
+        spicy: false,
+      });
+      
+      toast({
+        title: "Produto criado!",
+        description: "O produto foi adicionado ao cardápio",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao criar produto",
+        description: "Tente novamente",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteProduct = async (productId: number, productName: string) => {
+    if (!confirm(`Tem certeza que deseja deletar "${productName}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      await menuService.deleteProduct(productId);
+      await loadMenuItems();
+      
+      toast({
+        title: "Produto deletado!",
+        description: `"${productName}" foi removido do cardápio`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao deletar produto",
+        description: "Tente novamente",
+        variant: "destructive"
+      });
+    }
   };
 
   const getCategoryLabel = (category: string) => {
@@ -935,10 +1014,119 @@ const Admin = () => {
                       Gerencie os preços e informações dos produtos do cardápio
                     </CardDescription>
                   </div>
-                  <Button onClick={loadMenuItems} variant="outline" disabled={isLoadingProducts}>
-                    <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingProducts ? 'animate-spin' : ''}`} />
-                    Atualizar
-                  </Button>
+                  <div className="flex gap-2">
+                    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="flex items-center gap-2">
+                          <Plus className="w-4 h-4" />
+                          Novo Produto
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>Adicionar Novo Produto</DialogTitle>
+                          <DialogDescription>
+                            Preencha as informações do novo produto do cardápio
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="new-name">Nome do Produto *</Label>
+                            <Input
+                              id="new-name"
+                              value={newProduct.name || ''}
+                              onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                              placeholder="Ex: Hamburger Kalifa Classic"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="new-description">Descrição *</Label>
+                            <Input
+                              id="new-description"
+                              value={newProduct.description || ''}
+                              onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                              placeholder="Descrição detalhada do produto"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="new-price">Preço (R$) *</Label>
+                              <Input
+                                id="new-price"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={newProduct.price || ''}
+                                onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) || 0 })}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="new-category">Categoria *</Label>
+                              <Select
+                                value={newProduct.category || 'classics'}
+                                onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="classics">Clássicos</SelectItem>
+                                  <SelectItem value="premium">Premium</SelectItem>
+                                  <SelectItem value="specials">Especiais</SelectItem>
+                                  <SelectItem value="veggie">Vegetarianos</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div>
+                            <Label htmlFor="new-image">URL da Imagem</Label>
+                            <Input
+                              id="new-image"
+                              value={newProduct.image || ''}
+                              onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
+                              placeholder="/placeholder.svg ou URL da imagem"
+                            />
+                          </div>
+                          <div className="flex gap-4">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="new-popular"
+                                checked={newProduct.popular || false}
+                                onChange={(e) => setNewProduct({ ...newProduct, popular: e.target.checked })}
+                                className="rounded"
+                              />
+                              <Label htmlFor="new-popular">Produto Popular</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="new-spicy"
+                                checked={newProduct.spicy || false}
+                                onChange={(e) => setNewProduct({ ...newProduct, spicy: e.target.checked })}
+                                className="rounded"
+                              />
+                              <Label htmlFor="new-spicy">Produto Picante</Label>
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                              Cancelar
+                            </Button>
+                            <Button onClick={handleCreateProduct}>
+                              <Save className="w-4 h-4 mr-2" />
+                              Criar Produto
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    <Button onClick={loadMenuItems} variant="outline" disabled={isLoadingProducts}>
+                      <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingProducts ? 'animate-spin' : ''}`} />
+                      Atualizar
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -1013,15 +1201,26 @@ const Admin = () => {
                             </div>
                             
                             {editingProduct !== product.id && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditPrice(product)}
-                                className="flex items-center gap-2"
-                              >
-                                <Edit className="w-4 h-4" />
-                                Editar Preço
-                              </Button>
+                              <div className="flex flex-col gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditPrice(product)}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                  Editar Preço
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteProduct(product.id, product.name)}
+                                  className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <X className="w-4 h-4" />
+                                  Deletar
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </CardContent>

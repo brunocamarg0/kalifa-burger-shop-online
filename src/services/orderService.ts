@@ -34,7 +34,8 @@ class OrderService {
         price: item.price,
         quantity: item.quantity,
         image: item.image,
-        description: item.description
+        description: item.description,
+        customization: item.customization
       })),
       customer,
       payment,

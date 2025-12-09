@@ -14,6 +14,7 @@ import { ArrowLeft, CreditCard, ShoppingCart, Trash2, Plus, Minus, CheckCircle, 
 import { useToast } from '@/hooks/use-toast';
 import MercadoPagoButton from '@/components/MercadoPagoButton';
 import PixPayment from '@/components/PixPayment';
+import { MEAT_DONENESS_OPTIONS } from '@/types/burger';
 import { CartItem } from '@/services/mercadopagoService';
 
 const Checkout = () => {
@@ -458,8 +459,8 @@ const Checkout = () => {
               <CardContent className="space-y-4">
                 {/* Itens do Carrinho */}
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {state.items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                  {state.items.map((item, index) => (
+                    <div key={`${item.id}-${index}`} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
                       <img 
                         src={item.image} 
                         alt={item.name}
@@ -470,7 +471,51 @@ const Checkout = () => {
                         <p className="text-sm text-muted-foreground truncate">
                           {item.description}
                         </p>
-                        <p className="text-sm font-medium text-primary">
+                        
+                        {/* Mostrar customizações se existirem */}
+                        {item.customization && (
+                          <div className="mt-2 space-y-1 text-xs">
+                            {item.customization.meatDoneness && (
+                              <div className="text-muted-foreground">
+                                <strong>Ponto da carne:</strong> {
+                                  MEAT_DONENESS_OPTIONS.find(o => o.value === item.customization?.meatDoneness)?.label
+                                }
+                              </div>
+                            )}
+                            {item.customization.addons.length > 0 && (
+                              <div className="text-muted-foreground">
+                                <strong>Extras:</strong> {item.customization.addons.map(a => a.name).join(', ')}
+                                {item.customization.addons.reduce((sum, a) => sum + a.price, 0) > 0 && (
+                                  <span className="ml-1">
+                                    (+R$ {item.customization.addons.reduce((sum, a) => sum + a.price, 0).toFixed(2)})
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {item.customization.extraSauces.length > 0 && (
+                              <div className="text-muted-foreground">
+                                <strong>Molhos extras:</strong> {item.customization.extraSauces.map(s => s.name).join(', ')}
+                                {item.customization.extraSauces.reduce((sum, s) => sum + s.price, 0) > 0 && (
+                                  <span className="ml-1">
+                                    (+R$ {item.customization.extraSauces.reduce((sum, s) => sum + s.price, 0).toFixed(2)})
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {item.customization.sachets.length > 0 && (
+                              <div className="text-muted-foreground">
+                                <strong>Saches:</strong> {item.customization.sachets.map(s => s.name).join(', ')}
+                              </div>
+                            )}
+                            {item.customization.observations && (
+                              <div className="text-muted-foreground italic">
+                                <strong>Obs:</strong> {item.customization.observations}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        <p className="text-sm font-medium text-primary mt-1">
                           R$ {item.price.toFixed(2)} x {item.quantity}
                         </p>
                       </div>

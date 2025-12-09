@@ -7,6 +7,8 @@ import { ShoppingCart, Star, Flame, Plus } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import { menuService, MenuItem } from '@/services/menuService';
+import BurgerCustomizer from '@/components/BurgerCustomizer';
+import { BurgerCustomization } from '@/types/burger';
 import classicBurger from '@/assets/classic-burger.jpg';
 import baconBurger from '@/assets/bacon-burger.jpg';
 import bbqBurger from '@/assets/bbq-burger.jpg';
@@ -18,6 +20,7 @@ const Menu = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [customizingProduct, setCustomizingProduct] = useState<MenuItem | null>(null);
 
   useEffect(() => {
     loadMenuItems();
@@ -70,18 +73,48 @@ const Menu = () => {
   ];
 
   const handleAddToCart = (item: MenuItem) => {
+    // Se for um hambúrguer (categoria não é "specials" para porções), abrir customizador
+    if (item.category !== 'specials') {
+      setCustomizingProduct(item);
+    } else {
+      // Porções não precisam de customização
+      addItem({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        image: item.image,
+        description: item.description
+      });
+      
+      toast({
+        title: "Item adicionado!",
+        description: `${item.name} foi adicionado ao carrinho.`,
+      });
+    }
+  };
+
+  const handleCustomizationConfirm = (customization: BurgerCustomization, totalPrice: number) => {
+    if (!customizingProduct) return;
+
     addItem({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      image: item.image,
-      description: item.description
+      id: customizingProduct.id,
+      name: customizingProduct.name,
+      price: totalPrice,
+      image: customizingProduct.image,
+      description: customizingProduct.description,
+      customization
     });
-    
+
     toast({
-      title: "Item adicionado!",
-      description: `${item.name} foi adicionado ao carrinho.`,
+      title: "Hambúrguer adicionado!",
+      description: `${customizingProduct.name} foi adicionado ao carrinho com suas customizações.`,
     });
+
+    setCustomizingProduct(null);
+  };
+
+  const handleCustomizationCancel = () => {
+    setCustomizingProduct(null);
   };
 
   const handleOrder = (item: MenuItem) => {
@@ -89,14 +122,6 @@ const Menu = () => {
     const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
-
-  const categories = [
-    { id: 'all', name: 'Todos', count: menuItems.length },
-    { id: 'classics', name: 'Clássicos', count: menuItems.filter(item => item.category === 'classics').length },
-    { id: 'premium', name: 'Premium', count: menuItems.filter(item => item.category === 'premium').length },
-    { id: 'specials', name: 'Especiais', count: menuItems.filter(item => item.category === 'specials').length },
-    { id: 'veggie', name: 'Vegetarianos', count: menuItems.filter(item => item.category === 'veggie').length },
-  ];
 
   if (isLoading) {
     return (
@@ -112,8 +137,17 @@ const Menu = () => {
   }
 
   return (
-    <section id="cardapio" className="py-20 bg-muted/20">
-      <div className="container mx-auto px-4">
+    <>
+      {customizingProduct && (
+        <BurgerCustomizer
+          productName={customizingProduct.name}
+          basePrice={customizingProduct.price}
+          onConfirm={handleCustomizationConfirm}
+          onCancel={handleCustomizationCancel}
+        />
+      )}
+      <section id="cardapio" className="py-20 bg-muted/20">
+        <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center space-y-4 mb-12">
           <h2 className="text-4xl md:text-5xl font-bold font-display">
@@ -241,6 +275,7 @@ const Menu = () => {
         </div>
       </div>
     </section>
+    </>
   );
 };
 
